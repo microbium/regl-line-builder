@@ -1,11 +1,23 @@
 import test from 'tape'
 import createREGL from 'regl'
 import { createContext } from './utils/create-context'
-import { LineBuilder } from '../index'
+import { LineBuilder, line } from '../index'
 
 var slice = Array.prototype.slice
 
-test('create resources', function (t) {
+test('export line shader', function (t) {
+  t.plan(2)
+  t.ok(line.vert, 'vert')
+  t.ok(line.frag, 'frag')
+})
+
+test('export line builder', function (t) {
+  t.plan(2)
+  t.ok(LineBuilder != null)
+  t.equal(typeof LineBuilder.create, 'function')
+})
+
+test('builder - create resources', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
 
@@ -21,11 +33,11 @@ test('create resources', function (t) {
   t.equal(position.view.length, 1024 * 2 * 2)
 })
 
-test('build lines', function (t) {
+test('builder - create geometry', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
 
-  t.plan(6)
+  t.plan(8)
 
   var ctx = LineBuilder.create(regl, {
     stride: 2,
@@ -34,6 +46,7 @@ test('build lines', function (t) {
   var cursor = ctx.state.cursor
   var paths = ctx.state.paths
   var position = ctx.resources.position
+  var offsetScale = ctx.resources.offsetScale
 
   ctx.beginPath()
   ctx.moveTo(10, 11)
@@ -49,6 +62,12 @@ test('build lines', function (t) {
       20, 21, 20, 21,
       30, 31, 30, 31,
       40, 41, 40, 41, 40, 41, 40, 41])
+  t.deepEqual(
+    slice.call(offsetScale.view, 0, 6 * 2), [
+      1, -1, 1, -1,
+      1, -1,
+      1, -1,
+      1, -1, 1, -1])
   t.deepEqual(paths[0], {
     offset: 0,
     count: 4,
@@ -75,6 +94,17 @@ test('build lines', function (t) {
       70, 71, 70, 71,
       80, 81, 80, 81,
       90, 91, 90, 91, 90, 91, 90, 91])
+  t.deepEqual(
+    slice.call(offsetScale.view, 0, 13 * 2), [
+      1, -1, 1, -1,
+      1, -1,
+      1, -1,
+      1, -1, 1, -1,
+      1, -1, 1, -1,
+      1, -1,
+      1, -1,
+      1, -1,
+      1, -1, 1, -1])
   t.deepEqual(paths[1], {
     offset: 6,
     count: 5,
