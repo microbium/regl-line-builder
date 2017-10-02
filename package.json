@@ -1,0 +1,29 @@
+{
+  "name": "regl-line-builder",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "babel-tape-runner test/*.js | faucet",
+    "test-lint": "eslint lib/*.js"
+  },
+  "author": "Jay Weeks <jay.patrick.weeks@gmail.com> (https://jayweeks.com)",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-eslint": "^8.0.1",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-tape-runner": "^2.0.1",
+    "eslint": "^4.6.1",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-node": "^5.1.1",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "faucet": "0.0.1",
+    "gl": "^4.0.4",
+    "regl": "^1.3.0",
+    "tape": "^4.8.0"
+  },
+  "dependencies": {
+  }
+}
