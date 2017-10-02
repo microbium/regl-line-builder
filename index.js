@@ -1,1 +1,1 @@
-export { LineBuilder } from './lib/LineBuilder'
+export { LineBuilder } from './src/LineBuilder'
