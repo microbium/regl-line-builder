@@ -176,7 +176,7 @@ inherit(null, LineBuilder, {
     })
     CONTEXT_ACCESSORS.forEach(function (key) {
       var accessor = that[key]
-      Object.defineProperty(map, 'lineWidth', accessor(state))
+      Object.defineProperty(map, key, accessor(state))
     })
     return map
   },
