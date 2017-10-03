@@ -78,6 +78,7 @@ regl.frame(({ tick }) => {
   const t0 = sin(tick * 0.1) * 0.5 + 0.5
 
   stats('frame').start()
+  stats('fps').frame()
   setupCamera(() => {
     regl.clear({
       color: [1, 1, 1, 1],
