@@ -37,7 +37,7 @@ test('builder - create geometry', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
 
-  t.plan(8)
+  t.plan(10)
 
   var ctx = LineBuilder.create(regl, {
     stride: 2,
@@ -55,7 +55,8 @@ test('builder - create geometry', function (t) {
   ctx.lineTo(40, 41)
   ctx.stroke()
 
-  t.equal(cursor.index, 6)
+  t.equal(cursor.element, 4)
+  t.equal(cursor.vertex, 6)
   t.deepEqual(
     slice.call(position.view, 0, 6 * 2 * 2), [
       10, 11, 10, 11, 10, 11, 10, 11,
@@ -82,7 +83,8 @@ test('builder - create geometry', function (t) {
   ctx.lineTo(90, 91)
   ctx.stroke()
 
-  t.equal(cursor.index, 13)
+  t.equal(cursor.element, 9)
+  t.equal(cursor.vertex, 13)
   t.deepEqual(
     slice.call(position.view, 0, 13 * 2 * 2), [
       10, 11, 10, 11, 10, 11, 10, 11,

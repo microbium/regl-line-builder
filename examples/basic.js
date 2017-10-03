@@ -14,10 +14,11 @@ const setupCamera = regl({
   }
 })
 
-const ctx = LineBuilder.create(regl, {
+const lines = LineBuilder.create(regl, {
   stride: 2,
   maxSize: 300
 })
+const ctx = lines.getContext()
 
 ctx.beginPath()
 ctx.moveTo(0, 0)
@@ -38,8 +39,7 @@ setupCamera(() => {
     depth: 1
   })
 
-  ctx.update()
-  ctx.draw({
+  lines.draw({
     color: [0, 0, 0],
     thickness: 14 / 100,
     miterLimit: 1
