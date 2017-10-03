@@ -1,5 +1,6 @@
 import createREGL from 'regl'
 import mat4 from 'gl-mat4'
+import { Stats } from '@jpweeks/rstats'
 import { LineBuilder } from '../index'
 
 const regl = createREGL()
@@ -13,6 +14,7 @@ const setupCamera = regl({
     }
   }
 })
+const stats = new Stats()
 
 const lines = LineBuilder.create(regl, {
   stride: 2,
@@ -37,15 +39,23 @@ ctx.lineTo(-800, 200)
 ctx.lineTo(-600, 100)
 ctx.stroke()
 
-setupCamera(() => {
-  regl.clear({
-    color: [1, 1, 1, 1],
-    depth: 1
-  })
+regl.frame(({ tick }) => {
+  const { sin } = Math
+  const t0 = sin(tick * 0.1) * 0.5 + 0.5
 
-  lines.draw({
-    color: [0, 0, 0],
-    thickness: 14 / 100,
-    miterLimit: 1
+  stats('frame').start()
+  setupCamera(() => {
+    regl.clear({
+      color: [1, 1, 1, 1],
+      depth: 1
+    })
+
+    lines.draw({
+      color: [0, 0, 0],
+      thickness: (8 / 100) + t0 * (6 / 100),
+      miterLimit: 1
+    })
   })
+  stats('frame').end()
+  stats().update()
 })
