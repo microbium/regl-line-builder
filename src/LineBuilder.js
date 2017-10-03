@@ -11,6 +11,9 @@ var CONTEXT_METHODS = [
   'closePath',
   'stroke'
 ]
+var CONTEXT_ACCESSORS = [
+  'lineWidth'
+]
 
 export function LineBuilder (regl, opts) {
   this.context = this.createContext(regl)
@@ -37,9 +40,13 @@ inherit(null, LineBuilder, {
     var sync = {
       vertex: 0
     }
+    var style = {
+      lineWidth: 1
+    }
     return {
       cursor: cursor,
       sync: sync,
+      style: style,
       activePath: null,
       paths: []
     }
@@ -160,10 +167,16 @@ inherit(null, LineBuilder, {
 
   getContext: function () {
     var that = this
-    return CONTEXT_METHODS.reduce(function (map, key) {
+    var state = this.state
+    var map = {}
+    CONTEXT_METHODS.forEach(function (key) {
       map[key] = that[key].bind(that)
-      return map
-    }, {})
+    })
+    CONTEXT_ACCESSORS.forEach(function (key) {
+      var accessor = that[key]
+      Object.defineProperty(map, 'lineWidth', accessor(state))
+    })
+    return map
   },
 
   // TODO: Resize resource buffers
@@ -208,6 +221,7 @@ inherit(null, LineBuilder, {
 
     var cursor = state.cursor
     var stride = cursor.stride
+    var lineWidth = state.style.lineWidth * 0.5
 
     var resources = this.resources
     var positionView = resources.position.view
@@ -224,10 +238,10 @@ inherit(null, LineBuilder, {
 
     var ais = cursor.vertex * 2
     var bis = (cursor.vertex + 1) * 2
-    offsetScaleView[ais + 0] = 1
-    offsetScaleView[ais + 1] = -1
-    offsetScaleView[bis + 0] = 1
-    offsetScaleView[bis + 1] = -1
+    offsetScaleView[ais + 0] = lineWidth
+    offsetScaleView[ais + 1] = -lineWidth
+    offsetScaleView[bis + 0] = lineWidth
+    offsetScaleView[bis + 1] = -lineWidth
 
     activePath.count += 1
     cursor.vertex += 2
@@ -239,6 +253,7 @@ inherit(null, LineBuilder, {
 
     var cursor = state.cursor
     var stride = cursor.stride
+    var lineWidth = state.style.lineWidth * 0.5
 
     var resources = this.resources
     var positionView = resources.position.view
@@ -251,8 +266,8 @@ inherit(null, LineBuilder, {
     positionView[aiy] = positionView[aiy + stride] = y
 
     var ais = cursor.vertex * 2
-    offsetScaleView[ais] = 1
-    offsetScaleView[ais + 1] = -1
+    offsetScaleView[ais] = lineWidth
+    offsetScaleView[ais + 1] = -lineWidth
 
     var evi = cursor.element * 6
     var aio = activePath.elementOffset + (activePath.count - 1) * 2
@@ -295,5 +310,17 @@ inherit(null, LineBuilder, {
     offsetScaleView[ais + 1] = offsetScaleView[bis + 1]
 
     cursor.vertex += 1
+  },
+
+  lineWidth: function (state) {
+    return {
+      get: function () {
+        return state.style.lineWidth
+      },
+      set: function (v) {
+        state.style.lineWidth = v
+        return v
+      }
+    }
   }
 })
