@@ -22,6 +22,17 @@ const lines = LineBuilder.create(regl, {
 })
 const ctx = lines.getContext()
 
+ctx.lineWidth = 1
+ctx.beginPath()
+ctx.moveTo(-100, 0)
+ctx.lineTo(0, 100)
+ctx.lineTo(-500, 500)
+ctx.lineTo(-700, 0)
+ctx.lineTo(-300, -300)
+ctx.lineTo(-800, -600)
+ctx.stroke()
+
+ctx.lineWidth = 1
 ctx.beginPath()
 ctx.moveTo(100, 0)
 ctx.lineTo(0, 100)
@@ -31,12 +42,35 @@ ctx.lineTo(300, -300)
 ctx.lineTo(800, -600)
 ctx.stroke()
 
+ctx.lineWidth = 2
 ctx.beginPath()
 ctx.moveTo(-400, -400)
 ctx.lineTo(-200, 100)
 ctx.lineTo(-700, 500)
 ctx.lineTo(-800, 200)
 ctx.lineTo(-600, 100)
+ctx.stroke()
+
+ctx.lineWidth = 2
+ctx.beginPath()
+ctx.moveTo(400, -400)
+ctx.lineTo(200, 100)
+ctx.lineTo(700, 500)
+ctx.lineTo(800, 200)
+ctx.lineTo(600, 100)
+ctx.stroke()
+
+ctx.lineWidth = 1
+ctx.beginPath()
+ctx.arc(400, 50, 50, 0, Math.PI)
+ctx.stroke()
+ctx.beginPath()
+ctx.arc(-400, 50, 50, 0, Math.PI)
+ctx.stroke()
+
+ctx.lineWidth = 3
+ctx.beginPath()
+ctx.arc(0, -400, 240, 0, Math.PI, true)
 ctx.stroke()
 
 regl.frame(({ tick }) => {
