@@ -169,3 +169,91 @@ test('builder - set line width', function (t) {
       1.5, -1.5, 1.5, -1.5],
     'offsetScale.view values')
 })
+
+test('builder - reset state', function (t) {
+  var gl = createContext(16, 16)
+  var regl = createREGL(gl)
+
+  t.plan(10)
+
+  var lines = LineBuilder.create(regl, {
+    stride: 2,
+    maxSize: 1024
+  })
+  var ctx = lines.getContext()
+  var state = lines.state
+  var position = lines.resources.position
+  var offsetScale = lines.resources.offsetScale
+
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(10, 11)
+  ctx.lineTo(20, 21)
+  ctx.lineTo(30, 31)
+  ctx.lineTo(40, 41)
+  ctx.stroke()
+
+  t.equal(state.cursor.element, 3,
+    'cursor.element')
+  t.equal(state.cursor.vertex, 6,
+    'cursor.vertex')
+  t.deepEqual(
+    slice.call(position.view, 0, 6 * 2 * 2), [
+      10, 11, 10, 11, 10, 11, 10, 11,
+      20, 21, 20, 21,
+      30, 31, 30, 31,
+      40, 41, 40, 41, 40, 41, 40, 41],
+    'position.view values')
+  t.deepEqual(
+    slice.call(offsetScale.view, 0, 6 * 2), [
+      1, -1, 1, -1,
+      1, -1,
+      1, -1,
+      1, -1, 1, -1],
+    'offsetScale.view values')
+  t.deepEqual(state.paths[0], {
+    offset: 0,
+    elementOffset: 0,
+    count: 4,
+    isClosed: false
+  },
+  'paths[0] state')
+
+  lines.reset()
+  ctx.lineWidth = 4
+  ctx.beginPath()
+  ctx.moveTo(50, 51)
+  ctx.lineTo(60, 61)
+  ctx.lineTo(70, 71)
+  ctx.lineTo(80, 81)
+  ctx.lineTo(90, 91)
+  ctx.stroke()
+
+  t.equal(state.cursor.element, 4,
+    'cursor.element')
+  t.equal(state.cursor.vertex, 7,
+    'cursor.vertex')
+  t.deepEqual(
+    slice.call(position.view, 0, 7 * 2 * 2), [
+      50, 51, 50, 51, 50, 51, 50, 51,
+      60, 61, 60, 61,
+      70, 71, 70, 71,
+      80, 81, 80, 81,
+      90, 91, 90, 91, 90, 91, 90, 91],
+    'position.view values')
+  t.deepEqual(
+    slice.call(offsetScale.view, 0, 7 * 2), [
+      2, -2, 2, -2,
+      2, -2,
+      2, -2,
+      2, -2,
+      2, -2, 2, -2],
+    'offsetScale.view values')
+  t.deepEqual(state.paths[0], {
+    offset: 0,
+    elementOffset: 0,
+    count: 5,
+    isClosed: false
+  },
+  'paths[0] state')
+})

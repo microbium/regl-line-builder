@@ -186,7 +186,13 @@ inherit(null, LineBuilder, {
   },
 
   reset: function () {
-    this.state = this.createState()
+    var state = this.state
+    state.cursor.vertex = 0
+    state.cursor.element = 0
+    state.sync.vertex = 0
+    state.style.lineWidth = 1
+    state.activePath = null
+    state.paths = []
   },
 
   // Geometry Creation
