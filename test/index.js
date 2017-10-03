@@ -106,7 +106,7 @@ test('builder - create geometry', function (t) {
       1, -1,
       1, -1, 1, -1])
   t.deepEqual(paths[1], {
-    offset: 6,
+    offset: 4,
     count: 5,
     isClosed: false
   })

@@ -110,16 +110,14 @@ inherit(null, LineBuilder, {
 
       // TODO: Optimize elements
       elements: function () {
-        var _elementIndexStart = 0
-        var elements = state.paths
+        var elementIndexStart = 0
+        return state.paths
           .reduce(function (indices, item, index) {
-            if (index === 0) _elementIndexStart = 0
-            lineMesh(indices, item.count, item.offset + _elementIndexStart)
-            _elementIndexStart += item.count + 4
+            if (index === 0) elementIndexStart = 0
+            lineMesh(indices, item.count, item.offset + elementIndexStart)
+            elementIndexStart += item.count + 4
             return indices
           }, [])
-        state.elements = elements
-        return elements
       },
 
       depth: { enable: false }
