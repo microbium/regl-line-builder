@@ -55,7 +55,7 @@ test('builder - create geometry', function (t) {
   ctx.lineTo(40, 41)
   ctx.stroke()
 
-  t.equal(cursor.element, 4)
+  t.equal(cursor.element, 3)
   t.equal(cursor.vertex, 6)
   t.deepEqual(
     slice.call(position.view, 0, 6 * 2 * 2), [
@@ -71,6 +71,7 @@ test('builder - create geometry', function (t) {
       1, -1, 1, -1])
   t.deepEqual(paths[0], {
     offset: 0,
+    elementOffset: 0,
     count: 4,
     isClosed: false
   })
@@ -83,7 +84,7 @@ test('builder - create geometry', function (t) {
   ctx.lineTo(90, 91)
   ctx.stroke()
 
-  t.equal(cursor.element, 9)
+  t.equal(cursor.element, 7)
   t.equal(cursor.vertex, 13)
   t.deepEqual(
     slice.call(position.view, 0, 13 * 2 * 2), [
@@ -109,6 +110,7 @@ test('builder - create geometry', function (t) {
       1, -1, 1, -1])
   t.deepEqual(paths[1], {
     offset: 4,
+    elementOffset: 12,
     count: 5,
     isClosed: false
   })

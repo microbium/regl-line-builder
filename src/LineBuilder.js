@@ -1,9 +1,9 @@
 import mat4 from 'gl-mat4'
 import { inherit } from './utils/ctor'
-import { lineMesh } from './utils/elements'
 import { line } from './shaders/line'
 
 var FLOAT_BYTES = Float32Array.BYTES_PER_ELEMENT
+var INT_BYTES = Uint16Array.BYTES_PER_ELEMENT
 var CONTEXT_METHODS = [
   'beginPath',
   'moveTo',
@@ -48,6 +48,7 @@ inherit(null, LineBuilder, {
     var positionView = new Float32Array(cursor.max * cursor.stride * 2)
     var offsetScaleView = new Float32Array(cursor.max * 2)
     // var uvs = new Float32Array(cursor.max * 2 * 3)
+    var elementsView = new Uint16Array(cursor.max * 4)
 
     var positionBuffer = regl.buffer({
       usage: 'dynamic',
@@ -59,6 +60,12 @@ inherit(null, LineBuilder, {
       type: 'float',
       length: offsetScaleView.length * FLOAT_BYTES
     })
+    var elementsBuffer = regl.elements({
+      usage: 'dynamic',
+      type: 'uint16',
+      primitive: 'triangles',
+      length: elementsView.length * INT_BYTES
+    })
 
     return {
       position: {
@@ -68,6 +75,10 @@ inherit(null, LineBuilder, {
       offsetScale: {
         view: offsetScaleView,
         buffer: offsetScaleBuffer
+      },
+      elements: {
+        view: elementsView,
+        buffer: elementsBuffer
       }
     }
   },
@@ -100,6 +111,7 @@ inherit(null, LineBuilder, {
   createDrawCommand: function () {
     var attributes = this.attributes
     var regl = this.context.regl
+    var resources = this.resources
     var state = this.state
 
     var uniforms = {
@@ -111,25 +123,16 @@ inherit(null, LineBuilder, {
       thickness: regl.prop('thickness'),
       miterLimit: regl.prop('miterLimit')
     }
-
+    var count = function () {
+      return state.cursor.element * 6
+    }
     var drawCommand = regl({
       vert: line.vert,
       frag: line.frag,
       uniforms: uniforms,
       attributes: attributes,
-
-      // TODO: Optimize elements
-      elements: function () {
-        var elementIndexStart = 0
-        return state.paths
-          .reduce(function (indices, item, index) {
-            if (index === 0) elementIndexStart = 0
-            lineMesh(indices, item.count, item.offset + elementIndexStart)
-            elementIndexStart += item.count + 4
-            return indices
-          }, [])
-      },
-
+      elements: resources.elements.buffer,
+      count: count,
       depth: { enable: false }
     })
 
@@ -142,8 +145,10 @@ inherit(null, LineBuilder, {
   syncResourceBuffers: function () {
     var position = this.resources.position
     var offsetScale = this.resources.offsetScale
+    var elements = this.resources.elements
     position.buffer.subdata(position.view, 0)
     offsetScale.buffer.subdata(offsetScale.view, 0)
+    elements.buffer.subdata(elements.view, 0)
   },
 
   getContext: function () {
@@ -174,12 +179,18 @@ inherit(null, LineBuilder, {
   beginPath: function () {
     var state = this.state
     var activePath = state.activePath
-    var offset = activePath ? activePath.offset + activePath.count : 0
+    var offset = !activePath ? 0
+      : activePath.offset + activePath.count
+    var elementOffset = !activePath ? 0
+      : activePath.elementOffset + activePath.count + 4 + offset
+
     var nextPath = {
       offset: offset,
+      elementOffset: elementOffset,
       count: 0,
       isClosed: false
     }
+
     state.activePath = nextPath
     state.paths.push(nextPath)
   },
@@ -187,6 +198,7 @@ inherit(null, LineBuilder, {
   moveTo: function (x, y) {
     var state = this.state
     var activePath = state.activePath
+
     var cursor = state.cursor
     var stride = cursor.stride
 
@@ -198,41 +210,54 @@ inherit(null, LineBuilder, {
     var aiy = aix + 1
     var bix = (cursor.vertex + 1) * stride * 2
     var biy = bix + 1
-    var ais = cursor.vertex * 2
-    var bis = (cursor.vertex + 1) * 2
-
     positionView[aix] = positionView[aix + stride] = x
     positionView[aiy] = positionView[aiy + stride] = y
     positionView[bix] = positionView[bix + stride] = x
     positionView[biy] = positionView[biy + stride] = y
-    offsetScaleView[ais] = 1
+
+    var ais = cursor.vertex * 2
+    var bis = (cursor.vertex + 1) * 2
+    offsetScaleView[ais + 0] = 1
     offsetScaleView[ais + 1] = -1
-    offsetScaleView[bis] = 1
+    offsetScaleView[bis + 0] = 1
     offsetScaleView[bis + 1] = -1
 
     activePath.count += 1
-    cursor.element += 1
     cursor.vertex += 2
   },
 
   lineTo: function (x, y) {
     var state = this.state
     var activePath = state.activePath
+
     var cursor = state.cursor
     var stride = cursor.stride
 
     var resources = this.resources
     var positionView = resources.position.view
     var offsetScaleView = resources.offsetScale.view
+    var elementsView = resources.elements.view
 
     var aix = cursor.vertex * stride * 2
     var aiy = aix + 1
-    var ais = cursor.vertex * 2
-
     positionView[aix] = positionView[aix + stride] = x
     positionView[aiy] = positionView[aiy + stride] = y
+
+    var ais = cursor.vertex * 2
     offsetScaleView[ais] = 1
     offsetScaleView[ais + 1] = -1
+
+    var evi = cursor.element * 6
+    var aio = activePath.elementOffset + (activePath.count - 1) * 2
+    var bio = aio + 1
+    var cio = aio + 2
+    var dio = aio + 3
+    elementsView[evi + 0] = aio
+    elementsView[evi + 1] = bio
+    elementsView[evi + 2] = cio
+    elementsView[evi + 3] = cio
+    elementsView[evi + 4] = bio
+    elementsView[evi + 5] = dio
 
     activePath.count += 1
     cursor.element += 1
