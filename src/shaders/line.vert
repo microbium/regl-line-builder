@@ -16,7 +16,7 @@ attribute vec2 nextPosition;
 // attribute vec3 currPosition;
 // attribute vec3 nextPosition;
 
-attribute float offsetScale;
+attribute float offset;
 // attribute vec3 uv;
 
 // varying vec3 vUV;
@@ -65,8 +65,7 @@ void main() {
 
   vec2 normal = vec2(-dir.y, dir.x) *
     clamp(len, 0.0, max(thickness, miterLimit)) / aspectVec;
-  vec4 offset = vec4(normal * offsetScale, 0.0, 1.0);
 
   // vUV = uv;
-  gl_Position = currProjected + offset;
+  gl_Position = currProjected + vec4(normal * offset, 0.0, 1.0);
 }

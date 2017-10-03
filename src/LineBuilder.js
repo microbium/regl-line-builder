@@ -59,7 +59,7 @@ inherit(null, LineBuilder, {
     var cursor = this.state.cursor
 
     var positionView = new Float32Array(cursor.max * cursor.stride * 2)
-    var offsetScaleView = new Float32Array(cursor.max * 2)
+    var offsetView = new Float32Array(cursor.max * 2)
     // var uvs = new Float32Array(cursor.max * 2 * 3)
     var elementsView = new Uint16Array(cursor.max * 4)
 
@@ -68,10 +68,10 @@ inherit(null, LineBuilder, {
       type: 'float',
       length: positionView.length * FLOAT_BYTES
     })
-    var offsetScaleBuffer = regl.buffer({
+    var offsetBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
-      length: offsetScaleView.length * FLOAT_BYTES
+      length: offsetView.length * FLOAT_BYTES
     })
     var elementsBuffer = regl.elements({
       usage: 'dynamic',
@@ -85,9 +85,9 @@ inherit(null, LineBuilder, {
         view: positionView,
         buffer: positionBuffer
       },
-      offsetScale: {
-        view: offsetScaleView,
-        buffer: offsetScaleBuffer
+      offset: {
+        view: offsetView,
+        buffer: offsetBuffer
       },
       elements: {
         view: elementsView,
@@ -99,7 +99,7 @@ inherit(null, LineBuilder, {
   createAttributes: function () {
     var stride = this.state.cursor.stride
     var position = this.resources.position
-    var offsetScale = this.resources.offsetScale
+    var offset = this.resources.offset
 
     return {
       prevPosition: {
@@ -117,7 +117,7 @@ inherit(null, LineBuilder, {
         offset: FLOAT_BYTES * stride * 4,
         stride: FLOAT_BYTES * stride
       },
-      offsetScale: offsetScale.buffer
+      offset: offset.buffer
     }
   },
 
@@ -139,6 +139,7 @@ inherit(null, LineBuilder, {
     var count = function () {
       return state.cursor.quad * 6
     }
+    // TODO: Share base regl command between multiple LineBuilder instances
     var drawCommand = regl({
       vert: line.vert,
       frag: line.frag,
@@ -160,10 +161,10 @@ inherit(null, LineBuilder, {
 
   syncResourceBuffers: function () {
     var position = this.resources.position
-    var offsetScale = this.resources.offsetScale
+    var offset = this.resources.offset
     var elements = this.resources.elements
     position.buffer.subdata(position.view, 0)
-    offsetScale.buffer.subdata(offsetScale.view, 0)
+    offset.buffer.subdata(offset.view, 0)
     elements.buffer.subdata(elements.view, 0)
   },
 
@@ -231,7 +232,7 @@ inherit(null, LineBuilder, {
 
     var resources = this.resources
     var positionView = resources.position.view
-    var offsetScaleView = resources.offsetScale.view
+    var offsetView = resources.offset.view
 
     var aix = cursor.vertex * stride * 2
     var aiy = aix + 1
@@ -244,10 +245,10 @@ inherit(null, LineBuilder, {
 
     var ais = cursor.vertex * 2
     var bis = (cursor.vertex + 1) * 2
-    offsetScaleView[ais + 0] = lineWidth
-    offsetScaleView[ais + 1] = -lineWidth
-    offsetScaleView[bis + 0] = lineWidth
-    offsetScaleView[bis + 1] = -lineWidth
+    offsetView[ais + 0] = lineWidth
+    offsetView[ais + 1] = -lineWidth
+    offsetView[bis + 0] = lineWidth
+    offsetView[bis + 1] = -lineWidth
 
     activePath.count += 1
     cursor.vertex += 2
@@ -263,7 +264,7 @@ inherit(null, LineBuilder, {
 
     var resources = this.resources
     var positionView = resources.position.view
-    var offsetScaleView = resources.offsetScale.view
+    var offsetView = resources.offset.view
     var elementsView = resources.elements.view
 
     var aix = cursor.vertex * stride * 2
@@ -273,8 +274,8 @@ inherit(null, LineBuilder, {
 
     // FIXME: Implement correct intermediate lineWidth changes
     var ais = cursor.vertex * 2
-    offsetScaleView[ais] = lineWidth
-    offsetScaleView[ais + 1] = -lineWidth
+    offsetView[ais] = lineWidth
+    offsetView[ais + 1] = -lineWidth
 
     var evi = cursor.quad * 6
     var aio = cursor.element
@@ -320,7 +321,7 @@ inherit(null, LineBuilder, {
 
     var resources = this.resources
     var positionView = resources.position.view
-    var offsetScaleView = resources.offsetScale.view
+    var offsetView = resources.offset.view
 
     var bix = (cursor.vertex - 1) * stride * 2
     var biy = bix + 1
@@ -331,8 +332,8 @@ inherit(null, LineBuilder, {
 
     positionView[aix] = positionView[aix + stride] = positionView[bix]
     positionView[aiy] = positionView[aiy + stride] = positionView[biy]
-    offsetScaleView[ais] = offsetScaleView[bis]
-    offsetScaleView[ais + 1] = offsetScaleView[bis + 1]
+    offsetView[ais] = offsetView[bis]
+    offsetView[ais + 1] = offsetView[bis + 1]
 
     cursor.element += 6
     cursor.vertex += 1

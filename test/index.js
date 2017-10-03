@@ -29,16 +29,16 @@ test('builder - create resources', function (t) {
   })
 
   var position = lines.resources.position
-  var offsetScale = lines.resources.offsetScale
+  var offset = lines.resources.offset
   var elements = lines.resources.elements
   t.equal(position.view.constructor, Float32Array,
     'position.view')
   t.equal(position.view.length, 1024 * 2 * 2,
     'position.view.length')
-  t.equal(offsetScale.view.constructor, Float32Array,
-    'offsetScale.view')
-  t.equal(offsetScale.view.length, 1024 * 2,
-    'offsetScale.view.length')
+  t.equal(offset.view.constructor, Float32Array,
+    'offset.view')
+  t.equal(offset.view.length, 1024 * 2,
+    'offset.view.length')
   t.equal(elements.view.constructor, Uint16Array,
     'elements.view')
   t.equal(elements.view.length, 1024 * 4,
@@ -59,7 +59,7 @@ test('builder - create geometry', function (t) {
   var cursor = lines.state.cursor
   var paths = lines.state.paths
   var position = lines.resources.position
-  var offsetScale = lines.resources.offsetScale
+  var offset = lines.resources.offset
 
   ctx.beginPath()
   ctx.moveTo(10, 11)
@@ -82,12 +82,12 @@ test('builder - create geometry', function (t) {
       40, 41, 40, 41, 40, 41, 40, 41],
     'position.view values')
   t.deepEqual(
-    slice.call(offsetScale.view, 0, 6 * 2), [
+    slice.call(offset.view, 0, 6 * 2), [
       0.5, -0.5, 0.5, -0.5,
       0.5, -0.5,
       0.5, -0.5,
       0.5, -0.5, 0.5, -0.5],
-    'offsetScale.view values')
+    'offset.view values')
   t.deepEqual(paths[0], {
     offset: 0,
     count: 4,
@@ -122,7 +122,7 @@ test('builder - create geometry', function (t) {
       90, 91, 90, 91, 90, 91, 90, 91],
     'position.view values')
   t.deepEqual(
-    slice.call(offsetScale.view, 0, 13 * 2), [
+    slice.call(offset.view, 0, 13 * 2), [
       0.5, -0.5, 0.5, -0.5,
       0.5, -0.5,
       0.5, -0.5,
@@ -132,7 +132,7 @@ test('builder - create geometry', function (t) {
       0.5, -0.5,
       0.5, -0.5,
       0.5, -0.5, 0.5, -0.5],
-    'offsetScale.view values')
+    'offset.view values')
   t.deepEqual(paths[1], {
     offset: 4,
     count: 5,
@@ -153,7 +153,7 @@ test('builder - set line width', function (t) {
   })
   var ctx = lines.getContext()
   var style = lines.state.style
-  var offsetScale = lines.resources.offsetScale
+  var offset = lines.resources.offset
 
   ctx.lineWidth = 3
   t.equal(style.lineWidth, 3, 'style.lineWidth')
@@ -165,11 +165,11 @@ test('builder - set line width', function (t) {
   ctx.stroke()
 
   t.deepEqual(
-    slice.call(offsetScale.view, 0, 5 * 2), [
+    slice.call(offset.view, 0, 5 * 2), [
       1.5, -1.5, 1.5, -1.5,
       1.5, -1.5,
       1.5, -1.5, 1.5, -1.5],
-    'offsetScale.view values')
+    'offset.view values')
 })
 
 test('builder - reset state', function (t) {
@@ -185,7 +185,7 @@ test('builder - reset state', function (t) {
   var ctx = lines.getContext()
   var state = lines.state
   var position = lines.resources.position
-  var offsetScale = lines.resources.offsetScale
+  var offset = lines.resources.offset
 
   ctx.lineWidth = 2
   ctx.beginPath()
@@ -209,12 +209,12 @@ test('builder - reset state', function (t) {
       40, 41, 40, 41, 40, 41, 40, 41],
     'position.view values')
   t.deepEqual(
-    slice.call(offsetScale.view, 0, 6 * 2), [
+    slice.call(offset.view, 0, 6 * 2), [
       1, -1, 1, -1,
       1, -1,
       1, -1,
       1, -1, 1, -1],
-    'offsetScale.view values')
+    'offset.view values')
   t.deepEqual(state.paths[0], {
     offset: 0,
     count: 4,
@@ -247,13 +247,13 @@ test('builder - reset state', function (t) {
       90, 91, 90, 91, 90, 91, 90, 91],
     'position.view values')
   t.deepEqual(
-    slice.call(offsetScale.view, 0, 7 * 2), [
+    slice.call(offset.view, 0, 7 * 2), [
       2, -2, 2, -2,
       2, -2,
       2, -2,
       2, -2,
       2, -2, 2, -2],
-    'offsetScale.view values')
+    'offset.view values')
   t.deepEqual(state.paths[0], {
     offset: 0,
     count: 5,
