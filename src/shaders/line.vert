@@ -25,6 +25,7 @@ void main() {
   vec2 aspectVec = vec2(aspect, 1.0);
   mat4 projViewModel = projection * view * model;
 
+  // TODO: Refactor to import/export as standalone function
   vec4 prevProjected = projViewModel * vec4(prevPosition, 0.0, 1.0);
   vec4 currProjected = projViewModel * vec4(currPosition, 0.0, 1.0);
   vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);

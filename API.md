@@ -5,18 +5,17 @@
 - configure stride
     - allow pushing 2 or 3 dimensional geometry
 - create geometry
-    - use flat (non-indexed) buffers
-    - methods
+    - use indexed buffers (for now)
+    - context methods
         - `beginPath`
         - `closePath`
         - `stroke`
         - `moveTo`
         - `lineTo`
         - `arc`
-        - `curve`*
-            - cardinal spline
-        - `reset`*
-            - reset retained geometry and style state
+        - `curve`* (cardinal spline)
+    - `reset`*
+        - reset retained geometry and style state
     - set style
         - lineWidth
             - per-vertex line width
