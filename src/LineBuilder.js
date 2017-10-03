@@ -8,6 +8,7 @@ var CONTEXT_METHODS = [
   'beginPath',
   'moveTo',
   'lineTo',
+  'arc',
   'closePath',
   'stroke'
 ]
@@ -34,6 +35,7 @@ inherit(null, LineBuilder, {
     var cursor = {
       vertex: 0,
       element: 0,
+      quad: 0,
       stride: opts.stride,
       max: opts.maxSize
     }
@@ -135,7 +137,7 @@ inherit(null, LineBuilder, {
       miterLimit: regl.prop('miterLimit')
     }
     var count = function () {
-      return state.cursor.element * 6
+      return state.cursor.quad * 6
     }
     var drawCommand = regl({
       vert: line.vert,
@@ -187,8 +189,9 @@ inherit(null, LineBuilder, {
 
   reset: function () {
     var state = this.state
-    state.cursor.vertex = 0
+    state.cursor.quad = 0
     state.cursor.element = 0
+    state.cursor.vertex = 0
     state.sync.vertex = 0
     state.style.lineWidth = 1
     state.activePath = null
@@ -207,12 +210,9 @@ inherit(null, LineBuilder, {
     var activePath = state.activePath
     var offset = !activePath ? 0
       : activePath.offset + activePath.count
-    var elementOffset = !activePath ? 0
-      : activePath.elementOffset + activePath.count + 4 + offset
 
     var nextPath = {
       offset: offset,
-      elementOffset: elementOffset,
       count: 0,
       isClosed: false
     }
@@ -271,12 +271,13 @@ inherit(null, LineBuilder, {
     positionView[aix] = positionView[aix + stride] = x
     positionView[aiy] = positionView[aiy + stride] = y
 
+    // FIXME: Implement correct intermediate lineWidth changes
     var ais = cursor.vertex * 2
     offsetScaleView[ais] = lineWidth
     offsetScaleView[ais + 1] = -lineWidth
 
-    var evi = cursor.element * 6
-    var aio = activePath.elementOffset + (activePath.count - 1) * 2
+    var evi = cursor.quad * 6
+    var aio = cursor.element
     var bio = aio + 1
     var cio = aio + 2
     var dio = aio + 3
@@ -288,8 +289,26 @@ inherit(null, LineBuilder, {
     elementsView[evi + 5] = dio
 
     activePath.count += 1
-    cursor.element += 1
+    cursor.quad += 1
+    cursor.element += 2
     cursor.vertex += 1
+  },
+
+  // TODO: Enable configuring segment precision
+  arc: function (x, y, radius, startAngle, endAngle, anticlockwise) {
+    var delta = endAngle - startAngle
+    var dir = anticlockwise === true ? -1 : 1
+    var count = Math.ceil(delta / (Math.PI / 10))
+
+    for (var i = 0; i < count; i++) {
+      var t = i / (count - 1)
+      var angle = startAngle + t * delta * dir
+      var ax = x + Math.cos(angle) * radius
+      var ay = y + Math.sin(angle) * radius
+
+      if (i === 0) this.moveTo(ax, ay)
+      else this.lineTo(ax, ay)
+    }
   },
 
   closePath: function () {},
@@ -315,6 +334,7 @@ inherit(null, LineBuilder, {
     offsetScaleView[ais] = offsetScaleView[bis]
     offsetScaleView[ais + 1] = offsetScaleView[bis + 1]
 
+    cursor.element += 6
     cursor.vertex += 1
   },
 

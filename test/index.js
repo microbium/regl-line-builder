@@ -49,7 +49,7 @@ test('builder - create geometry', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
 
-  t.plan(10)
+  t.plan(12)
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
@@ -68,7 +68,9 @@ test('builder - create geometry', function (t) {
   ctx.lineTo(40, 41)
   ctx.stroke()
 
-  t.equal(cursor.element, 3,
+  t.equal(cursor.quad, 3,
+    'cursor.quad')
+  t.equal(cursor.element, 12,
     'cursor.element')
   t.equal(cursor.vertex, 6,
     'cursor.vertex')
@@ -88,7 +90,6 @@ test('builder - create geometry', function (t) {
     'offsetScale.view values')
   t.deepEqual(paths[0], {
     offset: 0,
-    elementOffset: 0,
     count: 4,
     isClosed: false
   },
@@ -102,7 +103,9 @@ test('builder - create geometry', function (t) {
   ctx.lineTo(90, 91)
   ctx.stroke()
 
-  t.equal(cursor.element, 7,
+  t.equal(cursor.quad, 7,
+    'cursor.quad')
+  t.equal(cursor.element, 26,
     'cursor.element')
   t.equal(cursor.vertex, 13,
     'cursor.vertex')
@@ -132,7 +135,6 @@ test('builder - create geometry', function (t) {
     'offsetScale.view values')
   t.deepEqual(paths[1], {
     offset: 4,
-    elementOffset: 12,
     count: 5,
     isClosed: false
   },
@@ -174,7 +176,7 @@ test('builder - reset state', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
 
-  t.plan(10)
+  t.plan(12)
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
@@ -193,7 +195,9 @@ test('builder - reset state', function (t) {
   ctx.lineTo(40, 41)
   ctx.stroke()
 
-  t.equal(state.cursor.element, 3,
+  t.equal(state.cursor.quad, 3,
+    'cursor.quad')
+  t.equal(state.cursor.element, 12,
     'cursor.element')
   t.equal(state.cursor.vertex, 6,
     'cursor.vertex')
@@ -213,7 +217,6 @@ test('builder - reset state', function (t) {
     'offsetScale.view values')
   t.deepEqual(state.paths[0], {
     offset: 0,
-    elementOffset: 0,
     count: 4,
     isClosed: false
   },
@@ -229,7 +232,9 @@ test('builder - reset state', function (t) {
   ctx.lineTo(90, 91)
   ctx.stroke()
 
-  t.equal(state.cursor.element, 4,
+  t.equal(state.cursor.quad, 4,
+    'cursor.quad')
+  t.equal(state.cursor.element, 14,
     'cursor.element')
   t.equal(state.cursor.vertex, 7,
     'cursor.vertex')
@@ -251,7 +256,6 @@ test('builder - reset state', function (t) {
     'offsetScale.view values')
   t.deepEqual(state.paths[0], {
     offset: 0,
-    elementOffset: 0,
     count: 5,
     isClosed: false
   },
