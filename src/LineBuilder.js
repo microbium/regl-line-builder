@@ -34,8 +34,12 @@ inherit(null, LineBuilder, {
       stride: opts.stride,
       max: opts.maxSize
     }
+    var sync = {
+      vertex: 0
+    }
     return {
       cursor: cursor,
+      sync: sync,
       activePath: null,
       paths: []
     }
@@ -137,7 +141,10 @@ inherit(null, LineBuilder, {
     })
 
     return function (params) {
-      this.syncResourceBuffers()
+      if (state.sync.vertex < state.cursor.vertex) {
+        this.syncResourceBuffers()
+        state.sync.vertex = state.cursor.vertex
+      }
       return drawCommand(params)
     }.bind(this)
   },
