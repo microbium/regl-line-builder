@@ -21,16 +21,20 @@ const lines = LineBuilder.create(regl, {
 const ctx = lines.getContext()
 
 ctx.beginPath()
-ctx.moveTo(0, 0)
+ctx.moveTo(100, 0)
 ctx.lineTo(0, 100)
 ctx.lineTo(500, 500)
 ctx.lineTo(700, 0)
+ctx.lineTo(300, -300)
+ctx.lineTo(800, -600)
 ctx.stroke()
 
 ctx.beginPath()
 ctx.moveTo(-400, -400)
 ctx.lineTo(-200, 100)
 ctx.lineTo(-700, 500)
+ctx.lineTo(-800, 200)
+ctx.lineTo(-600, 100)
 ctx.stroke()
 
 setupCamera(() => {
