@@ -1,7 +1,7 @@
 {
   "name": "regl-line-builder",
   "version": "0.0.1",
-  "description": "",
+  "description": "Draw pretty lines in WebGL with the Canvas2D API.",
   "main": "dist/index.js",
   "scripts": {
     "start": "sh ./scripts/start.sh",
