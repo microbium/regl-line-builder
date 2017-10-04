@@ -79,6 +79,7 @@ npm install regl-line-builder --save
 
 ## License
 (c) 2017 Jay Weeks. MIT License
+(c) 2015 Matt DesLauriers where noted. MIT License
 
 [stability-url]: https://nodejs.org/api/documentation.html#documentation_stability_index
 [stability-image]: https://img.shields.io/badge/stability-experimental-orange.svg?style=flat-square

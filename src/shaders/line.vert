@@ -1,3 +1,7 @@
+// Based on WebGL lines demo
+// (c) 2015 Matt DesLauriers. MIT License
+// https://github.com/mattdesl/webgl-lines/
+
 precision highp float;
 
 uniform mat4 projection;
