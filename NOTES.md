@@ -14,7 +14,7 @@
         - `lineTo`
         - `arc`
         - `curve`* (cardinal spline)
-    - `reset`*
+    - reset
         - reset retained geometry and style state
     - set style
         - lineWidth
