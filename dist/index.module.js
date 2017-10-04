@@ -1,10 +1,4 @@
-(function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('gl-mat4/identity')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'gl-mat4/identity'], factory) :
-	(factory((global.REGL = {}),global.identity));
-}(this, (function (exports,identity) { 'use strict';
-
-identity = identity && identity.hasOwnProperty('default') ? identity['default'] : identity;
+import identity from 'gl-mat4/identity';
 
 function ctor(Ctor) {
   return function () {
@@ -410,9 +404,4 @@ inherit(null, LineBuilder, {
   }
 });
 
-exports.LineBuilder = LineBuilder;
-exports.line = line;
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-})));
+export { LineBuilder, line };
