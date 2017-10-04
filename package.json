@@ -12,6 +12,14 @@
   },
   "author": "Jay Weeks <jay.patrick.weeks@gmail.com> (https://jayweeks.com)",
   "license": "MIT",
+  "keywords": [
+    "webgl",
+    "regl"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jpweeks/regl-line-builder.git"
+  },
   "devDependencies": {
     "@jpweeks/rstats": "^1.1.0",
     "babel-eslint": "^8.0.1",
