@@ -1,4 +1,4 @@
-import mat4 from 'gl-mat4'
+import identity from 'gl-mat4/identity'
 import { inherit } from './utils/ctor'
 import { line } from './shaders/line'
 
@@ -128,7 +128,7 @@ inherit(null, LineBuilder, {
     var state = this.state
 
     var uniforms = {
-      model: mat4.identity([]),
+      model: identity([]),
       aspect: function (params) {
         return params.viewportWidth / params.viewportHeight
       },

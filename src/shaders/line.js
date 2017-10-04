@@ -1,4 +1,4 @@
-const glsl = require('glslify') // FIXME
+import glsl from 'glslify'
 
 export var line = {
   frag: glsl('./line.frag'),

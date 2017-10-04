@@ -10,4 +10,4 @@ fi
 echo "Running $SRC_NAME example ..."
 budo examples/$SRC_NAME.js \
   --title "LineBuilder – $SRC_NAME" \
-  --live -- -t babelify -t glslify
+  --live -- -t babelify

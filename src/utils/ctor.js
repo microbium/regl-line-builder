@@ -1,6 +1,6 @@
 export function ctor (Ctor) {
   return function () {
-    const instance = Object.create(Ctor.prototype)
+    var instance = Object.create(Ctor.prototype)
     Ctor.apply(instance, arguments)
     return instance
   }
