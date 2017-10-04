@@ -13,7 +13,7 @@ Draw pretty lines in **WebGL** with the **Canvas2D** API.
 ```javascript
 import createREGL from 'regl'
 import mat4 from 'gl-mat4'
-import { LineBuilder } from '../index'
+import { LineBuilder } from 'regl-line-builder'
 
 const regl = createREGL()
 const setupCamera = regl({
