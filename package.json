@@ -1,8 +1,9 @@
 {
   "name": "regl-line-builder",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Draw pretty lines in WebGL with the Canvas2D API.",
   "main": "dist/index.js",
+  "module": "dist/index.module.js",
   "scripts": {
     "start": "sh ./scripts/start.sh",
     "build": "sh ./scripts/build.sh",
@@ -37,8 +38,8 @@
     "gl": "^4.0.4",
     "glslify": "^6.1.0",
     "regl": "^1.3.0",
+    "rollup": "^0.50.0",
     "rollup-plugin-babel": "^3.0.2",
-    "rollupify": "github:jpweeks/rollupify",
     "tap-spec": "^4.1.1",
     "tape": "^4.8.0",
     "uglify-js": "^3.1.3"
