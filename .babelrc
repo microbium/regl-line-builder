@@ -1,7 +1,4 @@
 {
-  "plugins": [
-    "glslify"
-  ],
   "presets": [
     "es2015"
   ]
