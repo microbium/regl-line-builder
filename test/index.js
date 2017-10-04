@@ -45,7 +45,7 @@ test('builder - create resources', function (t) {
     'elements.view.length')
 })
 
-test('builder - create geometry', function (t) {
+test('builder - create paths', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
 
@@ -139,6 +139,64 @@ test('builder - create geometry', function (t) {
     isClosed: false
   },
   'paths[1] state')
+})
+
+test('builder - close paths', function (t) {
+  var gl = createContext(16, 16)
+  var regl = createREGL(gl)
+
+  t.plan(6)
+
+  var lines = LineBuilder.create(regl, {
+    stride: 2,
+    maxSize: 1024
+  })
+  var ctx = lines.getContext()
+  var cursor = lines.state.cursor
+  var paths = lines.state.paths
+  var position = lines.resources.position
+  var offset = lines.resources.offset
+
+  ctx.beginPath()
+  ctx.moveTo(10, 11)
+  ctx.lineTo(20, 21)
+  ctx.lineTo(30, 31)
+  ctx.lineTo(40, 41)
+  ctx.closePath()
+  ctx.stroke()
+
+  t.equal(cursor.quad, 4,
+    'cursor.quad')
+  t.equal(cursor.element, 14,
+    'cursor.element')
+  t.equal(cursor.vertex, 7,
+    'cursor.vertex')
+  t.deepEqual(
+    slice.call(position.view, 0, 7 * 2 * 2), [
+      40, 41, 40, 41,
+      10, 11, 10, 11,
+      20, 21, 20, 21,
+      30, 31, 30, 31,
+      40, 41, 40, 41,
+      10, 11, 10, 11,
+      20, 21, 20, 21],
+    'position.view values')
+  t.deepEqual(
+    slice.call(offset.view, 0, 7 * 2), [
+      0.5, -0.5,
+      0.5, -0.5,
+      0.5, -0.5,
+      0.5, -0.5,
+      0.5, -0.5,
+      0.5, -0.5,
+      0.5, -0.5],
+    'offset.view values')
+  t.deepEqual(paths[0], {
+    offset: 0,
+    count: 5,
+    isClosed: true
+  },
+  'paths[0] state')
 })
 
 test('builder - set line width', function (t) {

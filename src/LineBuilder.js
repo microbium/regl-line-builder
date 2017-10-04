@@ -312,10 +312,46 @@ inherit(null, LineBuilder, {
     }
   },
 
-  closePath: function () {},
+  closePath: function () {
+    var state = this.state
+    var activePath = state.activePath
+    var cursor = state.cursor
+    var stride = cursor.stride
+
+    var resources = this.resources
+    var positionView = resources.position.view
+
+    var bi = cursor.vertex - activePath.count
+    var bix = bi * stride * 2
+    var biy = bix + 1
+
+    var x = positionView[bix]
+    var y = positionView[biy]
+
+    this.lineTo(x, y)
+    activePath.isClosed = true
+  },
+
+  copyPosition: function (ai, bi) {
+    var state = this.state
+    var cursor = state.cursor
+    var stride = cursor.stride
+
+    var resources = this.resources
+    var positionView = resources.position.view
+
+    var aix = ai * stride * 2
+    var aiy = aix + 1
+    var bix = bi * stride * 2
+    var biy = bix + 1
+
+    positionView[aix] = positionView[aix + stride] = positionView[bix]
+    positionView[aiy] = positionView[aiy + stride] = positionView[biy]
+  },
 
   stroke: function () {
     var state = this.state
+    var activePath = state.activePath
     var cursor = state.cursor
     var stride = cursor.stride
 
@@ -323,12 +359,16 @@ inherit(null, LineBuilder, {
     var positionView = resources.position.view
     var offsetView = resources.offset.view
 
-    var bix = (cursor.vertex - 1) * stride * 2
+    var si = cursor.vertex - activePath.count
+    var bi = cursor.vertex - 1
+    var ai = cursor.vertex
+
+    var bix = bi * stride * 2
     var biy = bix + 1
-    var aix = cursor.vertex * stride * 2
+    var aix = ai * stride * 2
     var aiy = aix + 1
-    var bis = (cursor.vertex - 1) * 2
-    var ais = cursor.vertex * 2
+    var bis = bi * 2
+    var ais = ai * 2
 
     positionView[aix] = positionView[aix + stride] = positionView[bix]
     positionView[aiy] = positionView[aiy + stride] = positionView[biy]
@@ -337,6 +377,11 @@ inherit(null, LineBuilder, {
 
     cursor.element += 6
     cursor.vertex += 1
+
+    if (activePath.isClosed) {
+      this.copyPosition(si - 1, bi - 1)
+      this.copyPosition(ai, si + 1)
+    }
   },
 
   lineWidth: function (state) {
