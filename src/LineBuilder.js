@@ -218,11 +218,21 @@ inherit(null, LineBuilder, {
 
   reset: function () {
     var state = this.state
-    state.cursor.quad = 0
-    state.cursor.element = 0
-    state.cursor.vertex = 0
-    state.sync.vertex = 0
-    state.style.lineWidth = 1
+    var cursor = state.cursor
+    var sync = state.sync
+    var style = state.style
+
+    cursor.quad = 0
+    cursor.element = 0
+    cursor.vertex = 0
+    sync.vertex = 0
+
+    style.lineWidth = 1
+    style.color[0] = 0
+    style.color[1] = 0
+    style.color[2] = 0
+    style.color[3] = 1
+
     state.activePath = null
     state.paths = []
   },
