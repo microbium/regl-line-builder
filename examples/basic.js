@@ -22,6 +22,8 @@ const lines = LineBuilder.create(regl, {
 })
 const ctx = lines.getContext()
 
+ctx.globalAlpha = 0.5
+ctx.strokeStyle = '#ff0000'
 ctx.lineWidth = 1
 ctx.beginPath()
 ctx.moveTo(-100, 0)
@@ -42,6 +44,8 @@ ctx.lineTo(300, -300)
 ctx.lineTo(800, -600)
 ctx.stroke()
 
+ctx.globalAlpha = 0.95
+ctx.strokeStyle = '#111111'
 ctx.lineWidth = 2
 ctx.beginPath()
 ctx.moveTo(-400, -400)
@@ -60,6 +64,8 @@ ctx.lineTo(800, 200)
 ctx.lineTo(600, 100)
 ctx.stroke()
 
+ctx.globalAlpha = 0.9
+ctx.strokeStyle = '#00ffff'
 ctx.lineWidth = 1
 ctx.beginPath()
 ctx.arc(400, 50, 50, 0, Math.PI)
@@ -68,6 +74,7 @@ ctx.beginPath()
 ctx.arc(-400, 50, 50, 0, Math.PI)
 ctx.stroke()
 
+ctx.strokeStyle = '#111111'
 ctx.lineWidth = 3
 ctx.beginPath()
 ctx.arc(0, -400, 240, 0, Math.PI, true)

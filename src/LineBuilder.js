@@ -1,4 +1,5 @@
 import identity from 'gl-mat4/identity'
+import createColr from 'colr'
 import { inherit } from './utils/ctor'
 import { line } from './shaders/line'
 
@@ -13,8 +14,12 @@ var CONTEXT_METHODS = [
   'stroke'
 ]
 var CONTEXT_ACCESSORS = [
-  'lineWidth'
+  'globalAlpha',
+  'lineWidth',
+  'strokeStyle'
 ]
+
+var scratchColor = createColr()
 
 export function LineBuilder (regl, opts) {
   this.context = this.createContext(regl)
@@ -43,7 +48,9 @@ inherit(null, LineBuilder, {
       vertex: 0
     }
     var style = {
-      lineWidth: 1
+      color: new Float32Array([0, 0, 0, 1]),
+      lineWidth: 1,
+      strokeStyle: '#000000'
     }
     return {
       cursor: cursor,
@@ -60,6 +67,7 @@ inherit(null, LineBuilder, {
 
     var positionView = new Float32Array(cursor.max * cursor.stride * 2)
     var offsetView = new Float32Array(cursor.max * 2)
+    var colorView = new Float32Array(cursor.max * 4 * 2)
     // var uvs = new Float32Array(cursor.max * 2 * 3)
     var elementsView = new Uint16Array(cursor.max * 4)
 
@@ -72,6 +80,11 @@ inherit(null, LineBuilder, {
       usage: 'dynamic',
       type: 'float',
       length: offsetView.length * FLOAT_BYTES
+    })
+    var colorBuffer = regl.buffer({
+      usage: 'dynamic',
+      type: 'float',
+      length: colorView.length * FLOAT_BYTES
     })
     var elementsBuffer = regl.elements({
       usage: 'dynamic',
@@ -89,6 +102,10 @@ inherit(null, LineBuilder, {
         view: offsetView,
         buffer: offsetBuffer
       },
+      color: {
+        view: colorView,
+        buffer: colorBuffer
+      },
       elements: {
         view: elementsView,
         buffer: elementsBuffer
@@ -99,6 +116,7 @@ inherit(null, LineBuilder, {
   createAttributes: function () {
     var stride = this.state.cursor.stride
     var position = this.resources.position
+    var color = this.resources.color
     var offset = this.resources.offset
 
     return {
@@ -117,7 +135,8 @@ inherit(null, LineBuilder, {
         offset: FLOAT_BYTES * stride * 4,
         stride: FLOAT_BYTES * stride
       },
-      offset: offset.buffer
+      offset: offset.buffer,
+      color: color.buffer
     }
   },
 
@@ -132,7 +151,6 @@ inherit(null, LineBuilder, {
       aspect: function (params) {
         return params.viewportWidth / params.viewportHeight
       },
-      color: regl.prop('color'),
       thickness: regl.prop('thickness'),
       miterLimit: regl.prop('miterLimit')
     }
@@ -147,7 +165,15 @@ inherit(null, LineBuilder, {
       attributes: attributes,
       elements: resources.elements.buffer,
       count: count,
-      depth: { enable: false }
+      depth: { enable: false },
+      blend: {
+        enable: true,
+        equation: 'add',
+        func: {
+          src: 'src alpha',
+          dst: 'one minus src alpha'
+        }
+      }
     })
 
     return function (params) {
@@ -162,9 +188,11 @@ inherit(null, LineBuilder, {
   syncResourceBuffers: function () {
     var position = this.resources.position
     var offset = this.resources.offset
+    var color = this.resources.color
     var elements = this.resources.elements
     position.buffer.subdata(position.view, 0)
     offset.buffer.subdata(offset.view, 0)
+    color.buffer.subdata(color.view, 0)
     elements.buffer.subdata(elements.view, 0)
   },
 
@@ -228,11 +256,13 @@ inherit(null, LineBuilder, {
 
     var cursor = state.cursor
     var stride = cursor.stride
+    var color = state.style.color
     var lineWidth = state.style.lineWidth * 0.5
 
     var resources = this.resources
     var positionView = resources.position.view
     var offsetView = resources.offset.view
+    var colorView = resources.color.view
 
     var aix = cursor.vertex * stride * 2
     var aiy = aix + 1
@@ -250,6 +280,23 @@ inherit(null, LineBuilder, {
     offsetView[bis + 0] = lineWidth
     offsetView[bis + 1] = -lineWidth
 
+    var air = cursor.vertex * 4 * 2
+    var aig = air + 1
+    var aib = air + 2
+    var aia = air + 3
+    var bir = (cursor.vertex + 1) * 4 * 2
+    var big = bir + 1
+    var bib = bir + 2
+    var bia = bir + 3
+    colorView[air] = colorView[air + 4] = color[0]
+    colorView[aig] = colorView[aig + 4] = color[1]
+    colorView[aib] = colorView[aib + 4] = color[2]
+    colorView[aia] = colorView[aia + 4] = color[3]
+    colorView[bir] = colorView[bir + 4] = color[0]
+    colorView[big] = colorView[big + 4] = color[1]
+    colorView[bib] = colorView[bib + 4] = color[2]
+    colorView[bia] = colorView[bia + 4] = color[3]
+
     activePath.count += 1
     cursor.vertex += 2
   },
@@ -260,11 +307,13 @@ inherit(null, LineBuilder, {
 
     var cursor = state.cursor
     var stride = cursor.stride
+    var color = state.style.color
     var lineWidth = state.style.lineWidth * 0.5
 
     var resources = this.resources
     var positionView = resources.position.view
     var offsetView = resources.offset.view
+    var colorView = resources.color.view
     var elementsView = resources.elements.view
 
     var aix = cursor.vertex * stride * 2
@@ -276,6 +325,15 @@ inherit(null, LineBuilder, {
     var ais = cursor.vertex * 2
     offsetView[ais] = lineWidth
     offsetView[ais + 1] = -lineWidth
+
+    var air = cursor.vertex * 4 * 2
+    var aig = air + 1
+    var aib = air + 2
+    var aia = air + 3
+    colorView[air] = colorView[air + 4] = color[0]
+    colorView[aig] = colorView[aig + 4] = color[1]
+    colorView[aib] = colorView[aib + 4] = color[2]
+    colorView[aia] = colorView[aia + 4] = color[3]
 
     var evi = cursor.quad * 6
     var aio = cursor.element
@@ -358,6 +416,7 @@ inherit(null, LineBuilder, {
     var resources = this.resources
     var positionView = resources.position.view
     var offsetView = resources.offset.view
+    var colorView = resources.color.view
 
     var si = cursor.vertex - activePath.count
     var bi = cursor.vertex - 1
@@ -367,13 +426,26 @@ inherit(null, LineBuilder, {
     var biy = bix + 1
     var aix = ai * stride * 2
     var aiy = aix + 1
-    var bis = bi * 2
-    var ais = ai * 2
-
     positionView[aix] = positionView[aix + stride] = positionView[bix]
     positionView[aiy] = positionView[aiy + stride] = positionView[biy]
+
+    var bis = bi * 2
+    var ais = ai * 2
     offsetView[ais] = offsetView[bis]
     offsetView[ais + 1] = offsetView[bis + 1]
+
+    var bir = bi * 4 * 2
+    var big = bir + 1
+    var bib = bir + 2
+    var bia = bir + 3
+    var air = ai * 4 * 2
+    var aig = air + 1
+    var aib = air + 2
+    var aia = air + 3
+    colorView[air] = colorView[air + 4] = colorView[bir]
+    colorView[aig] = colorView[aig + 4] = colorView[big]
+    colorView[aib] = colorView[aib + 4] = colorView[bib]
+    colorView[aia] = colorView[aia + 4] = colorView[bia]
 
     cursor.element += 6
     cursor.vertex += 1
@@ -389,10 +461,49 @@ inherit(null, LineBuilder, {
       get: function () {
         return state.style.lineWidth
       },
-      set: function (v) {
-        state.style.lineWidth = v
-        return v
+      set: function (lineWidth) {
+        state.style.lineWidth = lineWidth
+        return lineWidth
       }
     }
+  },
+
+  globalAlpha: function (state) {
+    return {
+      get: function () {
+        return state.style.color[3]
+      },
+      set: function (globalAlpha) {
+        state.style.color[3] = globalAlpha
+        return globalAlpha
+      }
+    }
+  },
+
+  strokeStyle: function (state) {
+    return {
+      get: function () {
+        return state.style.strokeStyle
+      },
+      set: function (strokeStyle) {
+        var color = state.style.color
+        var rgb = scratchColor
+          .fromHex(strokeStyle)
+          .toRgbArray()
+        color[0] = rgb[0] / 255
+        color[1] = rgb[1] / 255
+        color[2] = rgb[2] / 255
+        state.style.strokeStyle = strokeStyle
+        return strokeStyle
+      }
+    }
+  },
+
+  setLineDash: function () {},
+
+  //
+
+  setTransform: function (m11, m12, m21, m22, dx, dy) {
+    // var transform = this.state.transform
   }
 })

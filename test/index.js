@@ -230,6 +230,39 @@ test('builder - set line width', function (t) {
     'offset.view values')
 })
 
+test('builder - set stroke style', function (t) {
+  var gl = createContext(16, 16)
+  var regl = createREGL(gl)
+
+  t.plan(3)
+
+  var lines = LineBuilder.create(regl, {
+    stride: 2,
+    maxSize: 1024
+  })
+  var ctx = lines.getContext()
+  var style = lines.state.style
+  var color = lines.resources.color
+
+  ctx.globalAlpha = 0.5
+  ctx.strokeStyle = '#ff0000'
+  t.equal(style.strokeStyle, '#ff0000', 'style.strokeStyle')
+  t.deepEqual(style.color, [1, 0, 0, 0.5], 'style.color')
+
+  ctx.beginPath()
+  ctx.moveTo(10, 11)
+  ctx.lineTo(20, 21)
+  ctx.lineTo(30, 31)
+  ctx.stroke()
+
+  t.deepEqual(
+    slice.call(color.view, 0, 5 * 4 * 2), [
+      1, 0, 0, 0.5, 1, 0, 0, 0.5, 1, 0, 0, 0.5, 1, 0, 0, 0.5,
+      1, 0, 0, 0.5, 1, 0, 0, 0.5,
+      1, 0, 0, 0.5, 1, 0, 0, 0.5, 1, 0, 0, 0.5, 1, 0, 0, 0.5],
+    'color.view values')
+})
+
 test('builder - reset state', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
