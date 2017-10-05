@@ -40,6 +40,8 @@ ctx.lineTo(-300, -300)
 ctx.closePath()
 ctx.stroke()
 
+ctx.strokeRect(-500, 700, 1000, 1400)
+
 regl.frame(({ tick }) => {
   const { sin } = Math
   const t0 = sin(tick * 0.1) * 0.5 + 0.5

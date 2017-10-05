@@ -11,7 +11,8 @@ var CONTEXT_METHODS = [
   'lineTo',
   'arc',
   'closePath',
-  'stroke'
+  'stroke',
+  'strokeRect'
 ]
 var CONTEXT_ACCESSORS = [
   'globalAlpha',
@@ -464,6 +465,16 @@ inherit(null, LineBuilder, {
       this.copyPosition(si - 1, bi - 1)
       this.copyPosition(ai, si + 1)
     }
+  },
+
+  strokeRect: function (x, y, width, height) {
+    this.beginPath()
+    this.moveTo(x, y)
+    this.lineTo(x + width, y)
+    this.lineTo(x + width, y - height)
+    this.lineTo(x, y - height)
+    this.closePath()
+    this.stroke()
   },
 
   lineWidth: function (state) {
