@@ -361,3 +361,52 @@ test('builder - reset state', function (t) {
   },
   'paths[0] state')
 })
+
+test('builder - save and restore state', function (t) {
+  var gl = createContext(16, 16)
+  var regl = createREGL(gl)
+
+  t.plan(7)
+
+  var lines = LineBuilder.create(regl, {
+    stride: 2,
+    maxSize: 1024
+  })
+  var ctx = lines.getContext()
+  var state = lines.state
+  var style = state.style
+
+  ctx.globalAlpha = 0.5
+  ctx.strokeStyle = '#ff0000'
+  ctx.lineWidth = 2
+
+  ctx.save()
+
+  t.equal(state.saveStack.length, 1,
+    'saveStack.length')
+  t.deepEqual(state.saveStack[0], {
+    style: {
+      lineWidth: 2,
+      color: [1, 0, 0, 0.5]
+    }
+  },
+  'saveStack[0] state')
+
+  ctx.globalAlpha = 1
+  ctx.strokeStyle = '#00ffff'
+  ctx.lineWidth = 4
+
+  t.deepEqual(style.color, [0, 1, 1, 1],
+    'style.color')
+  t.equal(style.lineWidth, 4,
+    'style.lineWidth')
+
+  ctx.restore()
+
+  t.equal(state.saveStack.length, 0,
+    'saveStack.length')
+  t.deepEqual(style.color, [1, 0, 0, 0.5],
+    'style.color')
+  t.equal(style.lineWidth, 2,
+    'style.lineWidth')
+})

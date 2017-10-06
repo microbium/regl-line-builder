@@ -12,10 +12,18 @@ var CONTEXT_METHODS = [
   'arc',
   'closePath',
   'stroke',
-  'strokeRect'
+  'strokeRect',
+  'setLineDash',
+  'setTransform',
+  'translate',
+  'scale',
+  'rotate',
+  'save',
+  'restore'
 ]
 var CONTEXT_ACCESSORS = [
   'globalAlpha',
+  'lineDashOffset',
   'lineWidth',
   'strokeStyle'
 ]
@@ -58,7 +66,8 @@ inherit(null, LineBuilder, {
       sync: sync,
       style: style,
       activePath: null,
-      paths: []
+      paths: [],
+      saveStack: []
     }
   },
 
@@ -236,6 +245,30 @@ inherit(null, LineBuilder, {
 
     state.activePath = null
     state.paths = []
+  },
+
+  // State Stack
+  // -----------
+  //
+
+  save: function () {
+    var state = this.state
+    var style = state.style
+    state.saveStack.push({
+      style: {
+        lineWidth: style.lineWidth,
+        color: style.color.slice()
+      }
+    })
+  },
+
+  restore: function () {
+    var state = this.state
+    var style = state.style
+    var prevState = state.saveStack.pop()
+    var prevStyle = prevState.style
+    style.lineWidth = prevStyle.lineWidth
+    style.color = prevStyle.color
   },
 
   // Geometry Creation
@@ -520,11 +553,19 @@ inherit(null, LineBuilder, {
     }
   },
 
-  setLineDash: function () {},
-
   //
 
-  setTransform: function (m11, m12, m21, m22, dx, dy) {
-    // var transform = this.state.transform
-  }
+  lineDashOffset: function () {
+    return {}
+  },
+
+  setLineDash: function () {},
+
+  setTransform: function (m11, m12, m21, m22, dx, dy) {},
+
+  translate: function (x, y) {},
+
+  scale: function (x, y) {},
+
+  rotate: function (angle) {}
 })
