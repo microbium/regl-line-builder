@@ -1,4 +1,4 @@
-import createColr from 'colr'
+import { setRGB } from './utils/color'
 import { inherit } from './utils/ctor'
 import { line } from './shaders/line'
 
@@ -26,8 +26,6 @@ var CONTEXT_ACCESSORS = [
   'lineWidth',
   'strokeStyle'
 ]
-
-var scratchColor = createColr()
 
 export function LineBuilder (regl, opts) {
   this.context = this.createContext(regl)
@@ -540,12 +538,7 @@ inherit(null, LineBuilder, {
       },
       set: function (strokeStyle) {
         var color = state.style.color
-        var rgb = scratchColor
-          .fromHex(strokeStyle)
-          .toRgbArray()
-        color[0] = rgb[0] / 255
-        color[1] = rgb[1] / 255
-        color[2] = rgb[2] / 255
+        setRGB(color, strokeStyle)
         state.style.strokeStyle = strokeStyle
         return strokeStyle
       }
