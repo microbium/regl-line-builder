@@ -1,4 +1,8 @@
+var resolve = require('rollup-plugin-node-resolve')
+var commonjs = require('rollup-plugin-commonjs')
 var babel = require('rollup-plugin-babel')
+
+var NODE_ENV = process.env.NODE_ENV
 
 // TODO: Fix removing glslify imports after compilation ...
 function stripGlslify () {
@@ -14,22 +18,33 @@ function stripGlslify () {
   }
 }
 
-module.exports = {
-  plugins: [
-    babel({
-      exclude: 'node_modules/**'
-    }),
-    stripGlslify()
-  ],
-  output: [
-    {
-      format: 'umd',
-      name: 'REGL',
-      file: 'dist/index.js'
-    },
-    {
-      format: 'es',
-      file: 'dist/index.module.js'
-    }
-  ]
+var plugins = [
+  resolve(),
+  commonjs(),
+  babel({
+    exclude: 'node_modules/**'
+  }),
+  stripGlslify()
+]
+
+var configs = {
+  development: {
+    plugins: plugins
+  },
+  production: {
+    plugins: plugins,
+    output: [
+      {
+        format: 'umd',
+        name: 'REGLLineBuilder',
+        file: 'dist/index.js'
+      },
+      {
+        format: 'es',
+        file: 'dist/index.module.js'
+      }
+    ]
+  }
 }
+
+module.exports = configs[NODE_ENV]

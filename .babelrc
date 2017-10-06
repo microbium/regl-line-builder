@@ -2,15 +2,13 @@
   "plugins": [
     "glslify"
   ],
+  "presets": [
+    ["es2015", {"modules": false}]
+  ],
   "env": {
-    "development": {
+    "testing": {
       "presets": [
         "es2015"
-      ]
-    },
-    "production": {
-      "presets": [
-        ["es2015", {"modules": false}]
       ]
     }
   }

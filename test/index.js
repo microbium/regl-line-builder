@@ -1,7 +1,7 @@
 import test from 'tape'
 import createREGL from 'regl'
 import { createContext } from './utils/create-context'
-import { LineBuilder, line } from '../index'
+import { LineBuilder, line } from '../dist/index'
 
 var slice = Array.prototype.slice
 
