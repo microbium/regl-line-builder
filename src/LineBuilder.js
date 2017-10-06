@@ -1,4 +1,3 @@
-import identity from 'gl-mat4/identity'
 import createColr from 'colr'
 import { inherit } from './utils/ctor'
 import { line } from './shaders/line'
@@ -157,10 +156,10 @@ inherit(null, LineBuilder, {
     var state = this.state
 
     var uniforms = {
-      model: identity([]),
       aspect: function (params) {
         return params.viewportWidth / params.viewportHeight
       },
+      model: regl.prop('model'),
       thickness: regl.prop('thickness'),
       miterLimit: regl.prop('miterLimit')
     }

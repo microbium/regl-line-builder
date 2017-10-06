@@ -50,6 +50,7 @@ regl.frame(({ tick }) => {
   stats('fps').frame()
   setupCamera(() => {
     regl.clear({
+      model: mat4.identity([]),
       color: [1, 1, 1, 1],
       depth: 1
     })

@@ -93,6 +93,7 @@ regl.frame(({ tick }) => {
     })
 
     lines.draw({
+      model: mat4.identity([]),
       color: [0, 0, 0],
       thickness: (8 / 100) + t0 * (6 / 100),
       miterLimit: 1
