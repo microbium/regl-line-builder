@@ -1,38 +1,29 @@
 var resolve = require('rollup-plugin-node-resolve')
 var commonjs = require('rollup-plugin-commonjs')
-var babel = require('rollup-plugin-babel')
+var glslify = require('@shotamatsuda/rollup-plugin-glslify')
+var cleanup = require('rollup-plugin-cleanup')
 
 var NODE_ENV = process.env.NODE_ENV
 
-// TODO: Fix removing glslify imports after compilation ...
-function stripGlslify () {
-  return {
-    name: 'strip-glslify',
-    transform: function (code, id) {
-      var transformedCode = code.replace("import glsl from 'glslify'", '')
-      return {
-        code: transformedCode,
-        map: { mappings: '' }
-      }
-    }
-  }
-}
-
-var plugins = [
-  resolve(),
-  commonjs(),
-  babel({
-    exclude: 'node_modules/**'
+var commonPlugins = [
+  resolve({
+    main: false,
+    modulesOnly: true
   }),
-  stripGlslify()
+  commonjs(),
+  glslify()
 ]
 
 var configs = {
   development: {
-    plugins: plugins
+    plugins: commonPlugins
   },
   production: {
-    plugins: plugins,
+    plugins: [].concat(commonPlugins, [
+      cleanup({
+        maxEmptyLines: 1
+      })
+    ]),
     output: [
       {
         format: 'umd',

@@ -1,6 +1,7 @@
-import glsl from 'glslify'
+import frag from './line.frag'
+import vert from './line.vert'
 
 export var line = {
-  frag: glsl('./line.frag'),
-  vert: glsl('./line.vert')
+  frag: frag,
+  vert: vert
 }

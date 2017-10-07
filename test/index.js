@@ -1,7 +1,7 @@
-import test from 'tape'
-import createREGL from 'regl'
-import { createContext } from './utils/create-context'
-import { LineBuilder, line } from '../dist/index'
+var test = require('tape')
+var createREGL = require('regl')
+var { createContext } = require('./utils/create-context')
+var { LineBuilder, line } = require('../dist/index')
 
 var slice = Array.prototype.slice
 

@@ -1,4 +1,4 @@
-import createGL from 'gl'
+var createGL = require('gl')
 
 var createContext
 if (typeof document !== 'undefined') {
@@ -43,4 +43,6 @@ if (typeof document !== 'undefined') {
   createContext.destroy = function (gl) {}
 }
 
-export { createContext }
+module.exports = {
+  createContext: createContext
+}
