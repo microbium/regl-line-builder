@@ -14,6 +14,8 @@ var commonPlugins = [
   glslify()
 ]
 
+// TODO: Should module and umd builds treat gl-matrix as external
+// and not inline used methods?
 var configs = {
   development: {
     plugins: commonPlugins

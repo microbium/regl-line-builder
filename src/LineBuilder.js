@@ -1,4 +1,4 @@
-import * as vec2 from 'gl-vec2-esm'
+import { vec2, mat2d } from 'gl-matrix'
 import { setRGB } from './utils/color'
 import { inherit } from './utils/ctor'
 import { line } from './shaders/line'
