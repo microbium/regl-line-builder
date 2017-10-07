@@ -22,10 +22,10 @@ attribute vec2 nextPosition;
 
 attribute float offset;
 attribute vec4 color;
-// attribute vec3 uv;
+attribute vec2 ud;
 
 varying vec4 vColor;
-// varying vec3 vUV;
+varying vec2 vUD;
 
 void main() {
   vec2 aspectVec = vec2(aspect, 1.0);
@@ -73,6 +73,7 @@ void main() {
     clamp(len, 0.0, max(thickness, miterLimit)) / aspectVec;
 
   vColor = color;
-  // vUV = uv;
+  vUD = ud;
+
   gl_Position = currProjected + vec4(normal * offset, 0.0, 1.0);
 }
