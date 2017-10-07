@@ -1,3 +1,4 @@
+import * as vec2 from 'gl-vec2-esm'
 import { setRGB } from './utils/color'
 import { inherit } from './utils/ctor'
 import { line } from './shaders/line'
@@ -27,6 +28,8 @@ var CONTEXT_ACCESSORS = [
   'strokeStyle'
 ]
 
+var scratchVec2 = vec2.create()
+
 export function LineBuilder (regl, opts) {
   this.context = this.createContext(regl)
   this.state = this.createState(opts)
@@ -54,7 +57,7 @@ inherit(null, LineBuilder, {
       vertex: 0
     }
     var style = {
-      color: new Float32Array([0, 0, 0, 1]),
+      color: [0, 0, 0, 1],
       lineWidth: 1,
       strokeStyle: '#000000'
     }
@@ -63,6 +66,7 @@ inherit(null, LineBuilder, {
       sync: sync,
       style: style,
       activePath: null,
+      prevPosition: vec2.create(),
       paths: [],
       saveStack: []
     }
@@ -75,7 +79,7 @@ inherit(null, LineBuilder, {
     var positionView = new Float32Array(cursor.max * cursor.stride * 2)
     var offsetView = new Float32Array(cursor.max * 2)
     var colorView = new Float32Array(cursor.max * 4 * 2)
-    // var uvs = new Float32Array(cursor.max * 2 * 3)
+    var udView = new Float32Array(cursor.max * 2 * 3)
     var elementsView = new Uint16Array(cursor.max * 4)
 
     var positionBuffer = regl.buffer({
@@ -92,6 +96,11 @@ inherit(null, LineBuilder, {
       usage: 'dynamic',
       type: 'float',
       length: colorView.length * FLOAT_BYTES
+    })
+    var udBuffer = regl.buffer({
+      usage: 'dynamic',
+      type: 'float',
+      length: udView.length * FLOAT_BYTES
     })
     var elementsBuffer = regl.elements({
       usage: 'dynamic',
@@ -113,6 +122,10 @@ inherit(null, LineBuilder, {
         view: colorView,
         buffer: colorBuffer
       },
+      ud: {
+        view: udView,
+        buffer: udBuffer
+      },
       elements: {
         view: elementsView,
         buffer: elementsBuffer
@@ -121,10 +134,12 @@ inherit(null, LineBuilder, {
   },
 
   createAttributes: function () {
+    var resources = this.resources
     var stride = this.state.cursor.stride
-    var position = this.resources.position
-    var color = this.resources.color
-    var offset = this.resources.offset
+    var position = resources.position
+    var color = resources.color
+    var ud = resources.ud
+    var offset = resources.offset
 
     return {
       prevPosition: {
@@ -143,6 +158,7 @@ inherit(null, LineBuilder, {
         stride: FLOAT_BYTES * stride
       },
       offset: offset.buffer,
+      ud: ud.buffer,
       color: color.buffer
     }
   },
@@ -193,14 +209,19 @@ inherit(null, LineBuilder, {
   },
 
   syncResourceBuffers: function () {
-    var position = this.resources.position
-    var offset = this.resources.offset
-    var color = this.resources.color
-    var elements = this.resources.elements
-    position.buffer.subdata(position.view, 0)
-    offset.buffer.subdata(offset.view, 0)
-    color.buffer.subdata(color.view, 0)
-    elements.buffer.subdata(elements.view, 0)
+    var resources = this.resources
+    var position = resources.position
+    var offset = resources.offset
+    var color = resources.color
+    var ud = resources.ud
+    var elements = resources.elements
+    var byteOffset = 0
+
+    position.buffer.subdata(position.view, byteOffset)
+    offset.buffer.subdata(offset.view, byteOffset)
+    color.buffer.subdata(color.view, byteOffset)
+    ud.buffer.subdata(ud.view, byteOffset)
+    elements.buffer.subdata(elements.view, byteOffset)
   },
 
   getContext: function () {
@@ -284,6 +305,7 @@ inherit(null, LineBuilder, {
     var nextPath = {
       offset: offset,
       count: 0,
+      totalLength: 0,
       isClosed: false
     }
 
@@ -293,6 +315,7 @@ inherit(null, LineBuilder, {
 
   moveTo: function (x, y) {
     var state = this.state
+    var prevPosition = state.prevPosition
     var activePath = state.activePath
 
     var cursor = state.cursor
@@ -303,6 +326,7 @@ inherit(null, LineBuilder, {
     var resources = this.resources
     var positionView = resources.position.view
     var offsetView = resources.offset.view
+    var udView = resources.ud.view
     var colorView = resources.color.view
 
     var aix = cursor.vertex * stride * 2
@@ -321,6 +345,17 @@ inherit(null, LineBuilder, {
     offsetView[bis + 0] = lineWidth
     offsetView[bis + 1] = -lineWidth
 
+    var aiu = cursor.vertex * 2 * 2
+    var aid = aiu + 1
+    var biu = (cursor.vertex + 1) * 2 * 2
+    var bid = biu + 1
+    udView[aiu] = 0
+    udView[aiu + 2] = 1
+    udView[biu] = 0
+    udView[biu + 2] = 1
+    udView[aid] = udView[aid + 2] = 0
+    udView[bid] = udView[bid + 2] = 0
+
     var air = cursor.vertex * 4 * 2
     var aig = air + 1
     var aib = air + 2
@@ -338,6 +373,7 @@ inherit(null, LineBuilder, {
     colorView[bib] = colorView[bib + 4] = color[2]
     colorView[bia] = colorView[bia + 4] = color[3]
 
+    vec2.set(prevPosition, x, y)
     activePath.count += 1
     cursor.vertex += 2
   },
@@ -345,6 +381,7 @@ inherit(null, LineBuilder, {
   lineTo: function (x, y) {
     var state = this.state
     var activePath = state.activePath
+    var prevPosition = state.prevPosition
 
     var cursor = state.cursor
     var stride = cursor.stride
@@ -355,7 +392,12 @@ inherit(null, LineBuilder, {
     var positionView = resources.position.view
     var offsetView = resources.offset.view
     var colorView = resources.color.view
+    var udView = resources.ud.view
     var elementsView = resources.elements.view
+
+    var nextPosition = vec2.set(scratchVec2, x, y)
+    var segmentLength = vec2.distance(prevPosition, nextPosition)
+    var totalLength = activePath.totalLength += segmentLength
 
     var aix = cursor.vertex * stride * 2
     var aiy = aix + 1
@@ -366,6 +408,12 @@ inherit(null, LineBuilder, {
     var ais = cursor.vertex * 2
     offsetView[ais] = lineWidth
     offsetView[ais + 1] = -lineWidth
+
+    var aiu = (cursor.vertex - 1) * 2 * 2
+    var aid = aiu + 1
+    udView[aiu] = 0
+    udView[aiu + 2] = 1
+    udView[aid] = udView[aid + 2] = totalLength
 
     var air = cursor.vertex * 4 * 2
     var aig = air + 1
@@ -388,6 +436,7 @@ inherit(null, LineBuilder, {
     elementsView[evi + 4] = bio
     elementsView[evi + 5] = dio
 
+    vec2.copy(prevPosition, nextPosition)
     activePath.count += 1
     cursor.quad += 1
     cursor.element += 2
@@ -457,6 +506,7 @@ inherit(null, LineBuilder, {
     var resources = this.resources
     var positionView = resources.position.view
     var offsetView = resources.offset.view
+    var udView = resources.ud.view
     var colorView = resources.color.view
 
     var si = cursor.vertex - activePath.count
@@ -474,6 +524,14 @@ inherit(null, LineBuilder, {
     var ais = ai * 2
     offsetView[ais] = offsetView[bis]
     offsetView[ais + 1] = offsetView[bis + 1]
+
+    var biu = bi * 2 * 2
+    var bid = biu + 1
+    var aiu = ai * 2 * 2
+    var aid = aiu + 1
+    udView[aiu] = 0
+    udView[aiu + 2] = 1
+    udView[aid] = udView[aid + 2] = udView[bid]
 
     var bir = bi * 4 * 2
     var big = bir + 1
