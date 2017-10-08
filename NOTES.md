@@ -1,33 +1,7 @@
-## Main Features
+## TODO
 
-- resize to maximum buffer length
-    - track minimum vertex draw count (cursor)
-- configure stride
-    - allow pushing 2 or 3 dimensional geometry
-- create geometry
-    - use indexed buffers (for now)
-    - context methods
-        - `beginPath`
-        - `closePath`
-        - `stroke`
-        - `moveTo`
-        - `lineTo`
-        - `arc`
-        - `curve`* (cardinal spline)
-    - reset
-        - reset retained geometry and style state
-    - set style
-        - lineWidth
-            - per-vertex line width
-        - setLineDash
-            - per-vertex line style
-        - strokeStyle
-            - per-vertex stroke color
-
-
-## Possible Features (Future)
-
-- matrix transformation stack
-    - one draw call per transformation space?
-    - best api to update transforms without recalculating geometry?
-    - maybe use `setTransform` to update view matrix, while other transformation methods mutate future created geometry?
+- [ ] Allow custom vertex and fragment shader input.
+- [ ] Export vertex transform GLSL method for custom vertex shaders.
+- [ ] Fix UV coordinates for skewed/mitered edges.
+- [ ] Add docs for API and supported Canvas2D features.
+- [ ] Add example for custom shaders.
