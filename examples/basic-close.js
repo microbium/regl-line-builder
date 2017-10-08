@@ -24,7 +24,8 @@ const ctx = lines.getContext()
 
 ctx.save()
 ctx.rotate(-Math.PI / 4)
-ctx.lineWidth = 1
+ctx.lineWidth = 2
+ctx.strokeStyle = '#fff000'
 ctx.beginPath()
 ctx.moveTo(300, 300)
 ctx.lineTo(-300, -300)
@@ -36,7 +37,6 @@ ctx.strokeRect(-500, 700, 1000, 1400)
 ctx.restore()
 
 ctx.rotate(Math.PI / 4)
-ctx.lineWidth = 2
 ctx.beginPath()
 ctx.moveTo(-300, 300)
 ctx.lineTo(300, -300)

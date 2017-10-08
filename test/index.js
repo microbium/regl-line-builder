@@ -6,22 +6,20 @@ var { LineBuilder, line } = require('../dist/index')
 var slice = Array.prototype.slice
 
 test('export line shader', function (t) {
-  t.plan(2)
   t.ok(line.vert, 'vert')
   t.ok(line.frag, 'frag')
+  t.end()
 })
 
 test('export line builder', function (t) {
-  t.plan(2)
   t.ok(LineBuilder != null, 'LineBuilder')
   t.equal(typeof LineBuilder.create, 'function', 'LineBuilder.create')
+  t.end()
 })
 
 test('builder - create resources', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
-
-  t.plan(6)
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
@@ -31,6 +29,7 @@ test('builder - create resources', function (t) {
   var position = lines.resources.position
   var offset = lines.resources.offset
   var elements = lines.resources.elements
+
   t.equal(position.view.constructor, Float32Array,
     'position.view')
   t.equal(position.view.length, 1024 * 2 * 2,
@@ -43,13 +42,13 @@ test('builder - create resources', function (t) {
     'elements.view')
   t.equal(elements.view.length, 1024 * 4,
     'elements.view.length')
+
+  t.end()
 })
 
 test('builder - create paths', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
-
-  t.plan(12)
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
@@ -74,6 +73,12 @@ test('builder - create paths', function (t) {
     'cursor.element')
   t.equal(cursor.vertex, 6,
     'cursor.vertex')
+
+  t.equal(paths[0].offset, 0,
+    'paths[0].offset')
+  t.equal(paths[0].count, 4,
+    'paths[0].count')
+
   t.deepEqual(
     slice.call(position.view, 0, 6 * 2 * 2), [
       10, 11, 10, 11, 10, 11, 10, 11,
@@ -88,12 +93,6 @@ test('builder - create paths', function (t) {
       0.5, -0.5,
       0.5, -0.5, 0.5, -0.5],
     'offset.view values')
-  t.deepEqual(paths[0], {
-    offset: 0,
-    count: 4,
-    isClosed: false
-  },
-  'paths[0] state')
 
   ctx.beginPath()
   ctx.moveTo(50, 51)
@@ -109,6 +108,12 @@ test('builder - create paths', function (t) {
     'cursor.element')
   t.equal(cursor.vertex, 13,
     'cursor.vertex')
+
+  t.equal(paths[1].offset, 4,
+    'paths[1].offset')
+  t.equal(paths[1].count, 5,
+    'paths[1].count')
+
   t.deepEqual(
     slice.call(position.view, 0, 13 * 2 * 2), [
       10, 11, 10, 11, 10, 11, 10, 11,
@@ -133,19 +138,13 @@ test('builder - create paths', function (t) {
       0.5, -0.5,
       0.5, -0.5, 0.5, -0.5],
     'offset.view values')
-  t.deepEqual(paths[1], {
-    offset: 4,
-    count: 5,
-    isClosed: false
-  },
-  'paths[1] state')
+
+  t.end()
 })
 
 test('builder - close paths', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
-
-  t.plan(6)
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
@@ -171,6 +170,14 @@ test('builder - close paths', function (t) {
     'cursor.element')
   t.equal(cursor.vertex, 7,
     'cursor.vertex')
+
+  t.equal(paths[0].offset, 0,
+    'paths[0].offset')
+  t.equal(paths[0].count, 5,
+    'paths[0].count')
+  t.equal(paths[0].isClosed, true,
+    'paths[0].isClosed')
+
   t.deepEqual(
     slice.call(position.view, 0, 7 * 2 * 2), [
       40, 41, 40, 41,
@@ -191,19 +198,13 @@ test('builder - close paths', function (t) {
       0.5, -0.5,
       0.5, -0.5],
     'offset.view values')
-  t.deepEqual(paths[0], {
-    offset: 0,
-    count: 5,
-    isClosed: true
-  },
-  'paths[0] state')
+
+  t.end()
 })
 
 test('builder - set line width', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
-
-  t.plan(2)
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
@@ -228,13 +229,13 @@ test('builder - set line width', function (t) {
       1.5, -1.5,
       1.5, -1.5, 1.5, -1.5],
     'offset.view values')
+
+  t.end()
 })
 
 test('builder - set stroke style', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
-
-  t.plan(3)
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
@@ -261,13 +262,13 @@ test('builder - set stroke style', function (t) {
       1, 0, 0, 0.5, 1, 0, 0, 0.5,
       1, 0, 0, 0.5, 1, 0, 0, 0.5, 1, 0, 0, 0.5, 1, 0, 0, 0.5],
     'color.view values')
+
+  t.end()
 })
 
 test('builder - reset state', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
-
-  t.plan(16)
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
@@ -275,6 +276,9 @@ test('builder - reset state', function (t) {
   })
   var ctx = lines.getContext()
   var state = lines.state
+  var cursor = state.cursor
+  var style = state.style
+  var paths = state.paths
   var position = lines.resources.position
   var offset = lines.resources.offset
 
@@ -288,16 +292,24 @@ test('builder - reset state', function (t) {
   ctx.lineTo(40, 41)
   ctx.stroke()
 
-  t.equal(state.cursor.quad, 3,
+  t.equal(cursor.quad, 3,
     'cursor.quad')
-  t.equal(state.cursor.element, 12,
+  t.equal(cursor.element, 12,
     'cursor.element')
-  t.equal(state.cursor.vertex, 6,
+  t.equal(cursor.vertex, 6,
     'cursor.vertex')
-  t.equal(state.style.lineWidth, 2,
+  t.equal(style.lineWidth, 2,
     'style.lineWidth')
-  t.deepEqual(state.style.color, [1, 0, 0, 0.5],
+  t.deepEqual(style.color, [1, 0, 0, 0.5],
     'style.color')
+
+  t.equal(paths[0].offset, 0,
+    'paths[0].offset')
+  t.equal(paths[0].count, 4,
+    'paths[0].count')
+  t.equal(paths[0].isClosed, false,
+    'paths[0].isClosed')
+
   t.deepEqual(
     slice.call(position.view, 0, 6 * 2 * 2), [
       10, 11, 10, 11, 10, 11, 10, 11,
@@ -312,12 +324,6 @@ test('builder - reset state', function (t) {
       1, -1,
       1, -1, 1, -1],
     'offset.view values')
-  t.deepEqual(state.paths[0], {
-    offset: 0,
-    count: 4,
-    isClosed: false
-  },
-  'paths[0] state')
 
   lines.reset()
   ctx.beginPath()
@@ -338,6 +344,14 @@ test('builder - reset state', function (t) {
     'style.lineWidth')
   t.deepEqual(state.style.color, [0, 0, 0, 1],
     'style.color')
+
+  t.equal(paths[0].offset, 0,
+    'paths[0].offset')
+  t.equal(paths[0].count, 5,
+    'paths[0].count')
+  t.equal(paths[0].isClosed, false,
+    'paths[0].isClosed')
+
   t.deepEqual(
     slice.call(position.view, 0, 7 * 2 * 2), [
       50, 51, 50, 51, 50, 51, 50, 51,
@@ -354,19 +368,13 @@ test('builder - reset state', function (t) {
       0.5, -0.5,
       0.5, -0.5, 0.5, -0.5],
     'offset.view values')
-  t.deepEqual(state.paths[0], {
-    offset: 0,
-    count: 5,
-    isClosed: false
-  },
-  'paths[0] state')
+
+  t.end()
 })
 
 test('builder - save and restore state', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
-
-  t.plan(7)
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
@@ -384,13 +392,11 @@ test('builder - save and restore state', function (t) {
 
   t.equal(state.saveStack.length, 1,
     'saveStack.length')
-  t.deepEqual(state.saveStack[0], {
-    style: {
-      lineWidth: 2,
-      color: [1, 0, 0, 0.5]
-    }
+  t.deepEqual(state.saveStack[0].style, {
+    lineWidth: 2,
+    color: [1, 0, 0, 0.5]
   },
-  'saveStack[0] state')
+  'saveStack[0].style state')
 
   ctx.globalAlpha = 1
   ctx.strokeStyle = '#00ffff'
@@ -409,4 +415,6 @@ test('builder - save and restore state', function (t) {
     'style.color')
   t.equal(style.lineWidth, 2,
     'style.lineWidth')
+
+  t.end()
 })

@@ -271,7 +271,7 @@ inherit(null, LineBuilder, {
     mat2d.identity(transform.matrix)
 
     state.activePath = null
-    state.paths = []
+    state.paths.length = 0
   },
 
   // State Stack
