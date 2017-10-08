@@ -23,7 +23,7 @@ var configs = {
   production: {
     plugins: [].concat(commonPlugins, [
       cleanup({
-        maxEmptyLines: 1
+        maxEmptyLines: -1
       })
     ]),
     output: [
