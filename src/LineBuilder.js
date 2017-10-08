@@ -277,10 +277,16 @@ inherit(null, LineBuilder, {
   save: function () {
     var state = this.state
     var style = state.style
+    var transform = state.transform
+
     state.saveStack.push({
       style: {
         lineWidth: style.lineWidth,
         color: style.color.slice()
+      },
+      transform: {
+        isIdentity: transform.isIdentity,
+        matrix: mat2d.clone(transform.matrix)
       }
     })
   },
@@ -288,10 +294,15 @@ inherit(null, LineBuilder, {
   restore: function () {
     var state = this.state
     var style = state.style
+    var transform = state.transform
     var prevState = state.saveStack.pop()
     var prevStyle = prevState.style
+    var prevTransform = prevState.transform
+
     style.lineWidth = prevStyle.lineWidth
     style.color = prevStyle.color
+    transform.isIdentity = prevTransform.isIdentity
+    transform.matrix = prevTransform.matrix
   },
 
   // Geometry Creation

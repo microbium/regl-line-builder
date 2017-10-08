@@ -22,6 +22,7 @@ const lines = LineBuilder.create(regl, {
 })
 const ctx = lines.getContext()
 
+ctx.save()
 ctx.rotate(-Math.PI / 4)
 ctx.lineWidth = 1
 ctx.beginPath()
@@ -32,8 +33,8 @@ ctx.lineTo(300, -300)
 ctx.closePath()
 ctx.stroke()
 ctx.strokeRect(-500, 700, 1000, 1400)
+ctx.restore()
 
-ctx.setTransform(1, 0, 0, 1, 0, 0)
 ctx.rotate(Math.PI / 4)
 ctx.lineWidth = 2
 ctx.beginPath()
