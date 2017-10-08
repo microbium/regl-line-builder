@@ -28,7 +28,6 @@
     "@jpweeks/rollupify": "^0.4.0",
     "@jpweeks/rstats": "^1.2.0",
     "@shotamatsuda/rollup-plugin-glslify": "^0.1.0",
-    "babel-eslint": "^8.0.1",
     "budo": "^10.0.4",
     "eslint": "^4.6.1",
     "eslint-config-standard": "^10.2.1",
