@@ -254,6 +254,7 @@ inherit(null, LineBuilder, {
     var cursor = state.cursor
     var sync = state.sync
     var style = state.style
+    var transform = state.transform
 
     cursor.quad = 0
     cursor.element = 0
@@ -265,6 +266,9 @@ inherit(null, LineBuilder, {
     style.color[1] = 0
     style.color[2] = 0
     style.color[3] = 1
+
+    transform.isIdentity = true
+    mat2d.identity(transform.matrix)
 
     state.activePath = null
     state.paths = []
