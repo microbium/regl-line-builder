@@ -28,8 +28,6 @@ function clone$1(a) {
   return out;
 }
 
-
-
 function identity$1(out) {
   out[0] = 1;
   out[1] = 0;
@@ -40,8 +38,6 @@ function identity$1(out) {
   return out;
 }
 
-
-
 function set$1(out, a, b, c, d, tx, ty) {
   out[0] = a;
   out[1] = b;
@@ -51,12 +47,6 @@ function set$1(out, a, b, c, d, tx, ty) {
   out[5] = ty;
   return out;
 }
-
-
-
-
-
-
 
 function rotate$1(out, a, rad) {
   let a0 = a[0], a1 = a[1], a2 = a[2], a3 = a[3], a4 = a[4], a5 = a[5];
@@ -117,8 +107,6 @@ function create$5() {
   return out;
 }
 
-
-
 function length$1(a) {
   let x = a[0];
   let y = a[1];
@@ -133,42 +121,6 @@ function fromValues$5(x, y, z) {
   out[2] = z;
   return out;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function normalize$1(out, a) {
   let x = a[0];
@@ -199,47 +151,7 @@ function cross(out, a, b) {
   return out;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const len$1 = length$1;
-
-
 
 const forEach = (function() {
   let vec = create$5();
@@ -279,48 +191,6 @@ function create$6() {
   return out;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function normalize$2(out, a) {
   let x = a[0];
   let y = a[1];
@@ -336,36 +206,6 @@ function normalize$2(out, a) {
   }
   return out;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 const forEach$1 = (function() {
   let vec = create$6();
@@ -405,8 +245,6 @@ function create$4() {
   return out;
 }
 
-
-
 function setAxisAngle(out, axis, rad) {
   rad = rad * 0.5;
   let s = Math.sin(rad);
@@ -416,18 +254,6 @@ function setAxisAngle(out, axis, rad) {
   out[3] = Math.cos(rad);
   return out;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 function slerp(out, a, b, t) {
 
@@ -466,10 +292,6 @@ function slerp(out, a, b, t) {
   return out;
 }
 
-
-
-
-
 function fromMat3(out, m) {
 
   let fTrace = m[0] + m[4] + m[8];
@@ -504,41 +326,7 @@ function fromMat3(out, m) {
   return out;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 const normalize = normalize$2;
-
-
-
-
 
 const rotationTo = (function() {
   let tmpvec3 = create$5();
@@ -611,10 +399,6 @@ function create$7() {
   return out;
 }
 
-
-
-
-
 function copy$7(out, a) {
   out[0] = a[0];
   out[1] = a[1];
@@ -627,55 +411,11 @@ function set$7(out, x, y) {
   return out;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function distance$2(a, b) {
   var x = b[0] - a[0],
     y = b[1] - a[1];
   return Math.sqrt(x*x + y*y);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function transformMat2d(out, a, m) {
   var x = a[0],
@@ -684,30 +424,6 @@ function transformMat2d(out, a, m) {
   out[1] = m[1] * x + m[3] * y + m[5];
   return out;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 const forEach$2 = (function() {
   let vec = create$7();
