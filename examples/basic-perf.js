@@ -1,5 +1,5 @@
 import createREGL from 'regl'
-import * as mat4 from 'gl-mat4-esm'
+import { mat4 } from 'gl-matrix'
 import Stats from '@jpweeks/rstats'
 import { LineBuilder } from '../index'
 
@@ -54,6 +54,7 @@ function draw ({ tick }) {
     })
 
     lines.draw({
+      model: mat4.identity([]),
       color: [0, 0, 0],
       thickness: (8 / 100) + t0 * (6 / 100),
       miterLimit: 1

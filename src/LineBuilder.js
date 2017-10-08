@@ -61,10 +61,15 @@ inherit(null, LineBuilder, {
       lineWidth: 1,
       strokeStyle: '#000000'
     }
+    var transform = {
+      isIdentity: true,
+      matrix: mat2d.create()
+    }
     return {
       cursor: cursor,
       sync: sync,
       style: style,
+      transform: transform,
       activePath: null,
       prevPosition: vec2.create(),
       paths: [],
@@ -315,8 +320,8 @@ inherit(null, LineBuilder, {
 
   moveTo: function (x, y) {
     var state = this.state
-    var prevPosition = state.prevPosition
     var activePath = state.activePath
+    var prevPosition = state.prevPosition
 
     var cursor = state.cursor
     var stride = cursor.stride
@@ -329,14 +334,16 @@ inherit(null, LineBuilder, {
     var udView = resources.ud.view
     var colorView = resources.color.view
 
+    var pos = this.transformInput(x, y)
+
     var aix = cursor.vertex * stride * 2
     var aiy = aix + 1
     var bix = (cursor.vertex + 1) * stride * 2
     var biy = bix + 1
-    positionView[aix] = positionView[aix + stride] = x
-    positionView[aiy] = positionView[aiy + stride] = y
-    positionView[bix] = positionView[bix + stride] = x
-    positionView[biy] = positionView[biy + stride] = y
+    positionView[aix] = positionView[aix + stride] = pos[0]
+    positionView[aiy] = positionView[aiy + stride] = pos[1]
+    positionView[bix] = positionView[bix + stride] = pos[0]
+    positionView[biy] = positionView[biy + stride] = pos[1]
 
     var ais = cursor.vertex * 2
     var bis = (cursor.vertex + 1) * 2
@@ -373,7 +380,7 @@ inherit(null, LineBuilder, {
     colorView[bib] = colorView[bib + 4] = color[2]
     colorView[bia] = colorView[bia + 4] = color[3]
 
-    vec2.set(prevPosition, x, y)
+    vec2.copy(prevPosition, pos)
     activePath.count += 1
     cursor.vertex += 2
   },
@@ -395,14 +402,14 @@ inherit(null, LineBuilder, {
     var udView = resources.ud.view
     var elementsView = resources.elements.view
 
-    var nextPosition = vec2.set(scratchVec2, x, y)
-    var segmentLength = vec2.distance(prevPosition, nextPosition)
+    var pos = this.transformInput(x, y)
+    var segmentLength = vec2.distance(prevPosition, pos)
     var totalLength = activePath.totalLength += segmentLength
 
     var aix = cursor.vertex * stride * 2
     var aiy = aix + 1
-    positionView[aix] = positionView[aix + stride] = x
-    positionView[aiy] = positionView[aiy + stride] = y
+    positionView[aix] = positionView[aix + stride] = pos[0]
+    positionView[aiy] = positionView[aiy + stride] = pos[1]
 
     // FIXME: Implement correct intermediate lineWidth changes
     var ais = cursor.vertex * 2
@@ -436,7 +443,7 @@ inherit(null, LineBuilder, {
     elementsView[evi + 4] = bio
     elementsView[evi + 5] = dio
 
-    vec2.copy(prevPosition, nextPosition)
+    vec2.copy(prevPosition, pos)
     activePath.count += 1
     cursor.quad += 1
     cursor.element += 2
@@ -476,8 +483,8 @@ inherit(null, LineBuilder, {
     var x = positionView[bix]
     var y = positionView[biy]
 
-    this.lineTo(x, y)
     activePath.isClosed = true
+    this.lineTo(x, y)
   },
 
   copyPosition: function (ai, bi) {
@@ -611,11 +618,43 @@ inherit(null, LineBuilder, {
 
   setLineDash: function () {},
 
-  setTransform: function (m11, m12, m21, m22, dx, dy) {},
+  // Vector Space Transforms
+  // -----------------------
 
-  translate: function (x, y) {},
+  setTransform: function (a, b, c, d, dx, dy) {
+    var transform = this.state.transform
+    mat2d.set(transform.matrix, a, b, c, d, dx, dy)
+    transform.isIdentity = false
+  },
 
-  scale: function (x, y) {},
+  translate: function (x, y) {
+    var transform = this.state.transform
+    var translation = vec2.set(scratchVec2, x, y)
+    mat2d.translate(transform.matrix, transform.matrix, translation)
+    transform.isIdentity = false
+  },
 
-  rotate: function (angle) {}
+  scale: function (x, y) {
+    var transform = this.state.transform
+    var scale = vec2.set(scratchVec2, x, y)
+    mat2d.scale(transform.matrix, transform.matrix, scale)
+    transform.isIdentity = false
+  },
+
+  rotate: function (angle) {
+    var transform = this.state.transform
+    mat2d.rotate(transform.matrix, transform.matrix, angle)
+    transform.isIdentity = false
+  },
+
+  transformInput: function (x, y) {
+    var activePath = this.state.activePath
+    var transform = this.state.transform
+    var pos = vec2.set(scratchVec2, x, y)
+    // TODO: Dan't depend on activePath state
+    if (!transform.isIdentity && !activePath.isClosed) {
+      vec2.transformMat2d(pos, pos, transform.matrix)
+    }
+    return pos
+  }
 })

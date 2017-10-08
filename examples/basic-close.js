@@ -1,5 +1,5 @@
 import createREGL from 'regl'
-import * as mat4 from 'gl-mat4-esm'
+import { mat4 } from 'gl-matrix'
 import Stats from '@jpweeks/rstats'
 import { LineBuilder } from '../index'
 
@@ -22,6 +22,7 @@ const lines = LineBuilder.create(regl, {
 })
 const ctx = lines.getContext()
 
+ctx.rotate(-Math.PI / 4)
 ctx.lineWidth = 1
 ctx.beginPath()
 ctx.moveTo(300, 300)
@@ -30,7 +31,10 @@ ctx.lineTo(-300, -500)
 ctx.lineTo(300, -300)
 ctx.closePath()
 ctx.stroke()
+ctx.strokeRect(-500, 700, 1000, 1400)
 
+ctx.setTransform(1, 0, 0, 1, 0, 0)
+ctx.rotate(Math.PI / 4)
 ctx.lineWidth = 2
 ctx.beginPath()
 ctx.moveTo(-300, 300)
@@ -39,7 +43,6 @@ ctx.lineTo(300, -500)
 ctx.lineTo(-300, -300)
 ctx.closePath()
 ctx.stroke()
-
 ctx.strokeRect(-500, 700, 1000, 1400)
 
 regl.frame(({ tick }) => {
@@ -56,6 +59,7 @@ regl.frame(({ tick }) => {
     })
 
     lines.draw({
+      model: mat4.identity([]),
       color: [0, 0, 0],
       thickness: (8 / 100) + t0 * (6 / 100),
       miterLimit: 1

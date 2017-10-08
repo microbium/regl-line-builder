@@ -1,5 +1,5 @@
 import createREGL from 'regl'
-import * as mat4 from 'gl-mat4-esm'
+import { mat4 } from 'gl-matrix'
 import Stats from '@jpweeks/rstats'
 import { LineBuilder } from '../index'
 
