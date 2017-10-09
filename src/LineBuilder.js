@@ -187,7 +187,8 @@ inherit(null, LineBuilder, {
         return context.miterLimit /
           (200 * params.viewportHeight / params.viewportWidth)
       },
-      model: regl.prop('model')
+      model: regl.prop('model'),
+      tint: regl.prop('tint')
     }
     var count = function () {
       return state.cursor.quad * 6
