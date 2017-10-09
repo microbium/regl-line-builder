@@ -56,7 +56,7 @@ void main() {
   else {
     // get directions from (C - B) and (B - A)
     vec2 dirA = normalize((currScreen - prevScreen));
-    if (int(miterLimit) == 0) {
+    if (int(miterLimit) == -1) {
       dir = dirA;
     } else {
       vec2 dirB = normalize((nextScreen - currScreen));

@@ -175,12 +175,18 @@ inherit(null, LineBuilder, {
     var state = this.state
 
     var uniforms = {
-      aspect: function (params) {
+      aspect: function (params, context) {
         return params.viewportWidth / params.viewportHeight
       },
-      model: regl.prop('model'),
-      thickness: regl.prop('thickness'),
-      miterLimit: regl.prop('miterLimit')
+      thickness: function (params, context) {
+        return context.thickness /
+          (200 * params.viewportHeight / params.viewportWidth)
+      },
+      miterLimit: function (params, context) {
+        return context.miterLimit /
+          (200 * params.viewportHeight / params.viewportWidth)
+      },
+      model: regl.prop('model')
     }
     var count = function () {
       return state.cursor.quad * 6
