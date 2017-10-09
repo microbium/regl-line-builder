@@ -473,7 +473,7 @@ inherit(null, LineBuilder, {
 
   // TODO: Enable configuring segment precision
   arc: function (x, y, radius, startAngle, endAngle, anticlockwise) {
-    var delta = endAngle - startAngle
+    var delta = Math.abs(endAngle - startAngle)
     var dir = anticlockwise === true ? -1 : 1
     var count = Math.ceil(delta / (Math.PI / 10))
 
@@ -587,8 +587,8 @@ inherit(null, LineBuilder, {
     this.beginPath()
     this.moveTo(x, y)
     this.lineTo(x + width, y)
-    this.lineTo(x + width, y - height)
-    this.lineTo(x, y - height)
+    this.lineTo(x + width, y + height)
+    this.lineTo(x, y + height)
     this.closePath()
     this.stroke()
   },
