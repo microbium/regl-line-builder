@@ -23,8 +23,8 @@ const lines = LineBuilder.create(regl, {
 const ctx = lines.getContext()
 
 ctx.globalAlpha = 0.5
-ctx.strokeStyle = '#ff0000'
-ctx.lineWidth = 1
+ctx.strokeStyle = '#ffeeee'
+ctx.lineWidth = 10
 ctx.beginPath()
 ctx.moveTo(-100, 0)
 ctx.lineTo(0, 100)
@@ -34,7 +34,7 @@ ctx.lineTo(-300, -300)
 ctx.lineTo(-800, -600)
 ctx.stroke()
 
-ctx.lineWidth = 1
+ctx.lineWidth = 10
 ctx.beginPath()
 ctx.moveTo(100, 0)
 ctx.lineTo(0, 100)
@@ -45,8 +45,8 @@ ctx.lineTo(800, -600)
 ctx.stroke()
 
 ctx.globalAlpha = 0.95
-ctx.strokeStyle = '#111111'
-ctx.lineWidth = 2
+ctx.strokeStyle = '#eeeeee'
+ctx.lineWidth = 22
 ctx.beginPath()
 ctx.moveTo(-400, -400)
 ctx.lineTo(-200, 100)
@@ -55,7 +55,7 @@ ctx.lineTo(-800, 200)
 ctx.lineTo(-600, 100)
 ctx.stroke()
 
-ctx.lineWidth = 2
+ctx.lineWidth = 20
 ctx.beginPath()
 ctx.moveTo(400, -400)
 ctx.lineTo(200, 100)
@@ -65,8 +65,8 @@ ctx.lineTo(600, 100)
 ctx.stroke()
 
 ctx.globalAlpha = 0.9
-ctx.strokeStyle = '#00ffff'
-ctx.lineWidth = 1
+ctx.strokeStyle = '#eeffff'
+ctx.lineWidth = 10
 ctx.beginPath()
 ctx.arc(400, 50, 50, 0, Math.PI)
 ctx.stroke()
@@ -74,8 +74,8 @@ ctx.beginPath()
 ctx.arc(-400, 50, 50, 0, Math.PI)
 ctx.stroke()
 
-ctx.strokeStyle = '#111111'
-ctx.lineWidth = 3
+ctx.strokeStyle = '#cccccc'
+ctx.lineWidth = 30
 ctx.beginPath()
 ctx.arc(0, -400, 240, 0, Math.PI, true)
 ctx.stroke()
@@ -83,6 +83,7 @@ ctx.stroke()
 regl.frame(({ tick }) => {
   const { sin } = Math
   const t0 = sin(tick * 0.1) * 0.5 + 0.5
+  const t1 = sin(tick * 0.2) * 0.5 + 0.5
 
   stats('frame').start()
   stats('fps').frame()
@@ -94,9 +95,9 @@ regl.frame(({ tick }) => {
 
     lines.draw({
       model: mat4.identity([]),
-      color: [0, 0, 0],
-      thickness: (8 / 100) + t0 * (6 / 100),
-      miterLimit: 1
+      tint: [0.8 * t0, 0, 0.5 * t1, 1],
+      thickness: 1 + t0 * 0.5,
+      miterLimit: 12
     })
   })
   stats('frame').end()

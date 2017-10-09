@@ -24,7 +24,7 @@ const ctx = lines.getContext()
 
 ctx.save()
 ctx.rotate(-Math.PI / 4)
-ctx.lineWidth = 2
+ctx.lineWidth = 20
 ctx.strokeStyle = '#fff000'
 ctx.beginPath()
 ctx.moveTo(300, 300)
@@ -33,10 +33,11 @@ ctx.lineTo(-300, -500)
 ctx.lineTo(300, -300)
 ctx.closePath()
 ctx.stroke()
-ctx.strokeRect(-500, 700, 1000, 1400)
+ctx.strokeRect(-500, -700, 1000, 1400)
 ctx.restore()
 
 ctx.rotate(Math.PI / 4)
+ctx.lineWidth = 10
 ctx.beginPath()
 ctx.moveTo(-300, 300)
 ctx.lineTo(300, -300)
@@ -44,7 +45,7 @@ ctx.lineTo(300, -500)
 ctx.lineTo(-300, -300)
 ctx.closePath()
 ctx.stroke()
-ctx.strokeRect(-500, 700, 1000, 1400)
+ctx.strokeRect(-500, -700, 1000, 1400)
 
 regl.frame(({ tick }) => {
   const { sin } = Math
@@ -61,9 +62,9 @@ regl.frame(({ tick }) => {
 
     lines.draw({
       model: mat4.identity([]),
-      color: [0, 0, 0],
-      thickness: (8 / 100) + t0 * (6 / 100),
-      miterLimit: 1
+      tint: [1, 1, 1, 1],
+      thickness: 1 + t0 * 0.5,
+      miterLimit: 12
     })
   })
   stats('frame').end()

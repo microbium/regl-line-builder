@@ -30,7 +30,7 @@ function update ({ viewportWidth, viewportHeight }) {
   lines.reset()
 
   for (let i = 0; i < 1400; i++) {
-    let lineWidth = random() * 0.1 + 0.05
+    let lineWidth = random() * 2 + 0.5
     let x = (random() * 2 - 1) * vw
     let y = (random() * 2 - 1) * vh
     let r = random() * 50 + 20
@@ -55,9 +55,9 @@ function draw ({ tick }) {
 
     lines.draw({
       model: mat4.identity([]),
-      color: [0, 0, 0],
-      thickness: (8 / 100) + t0 * (6 / 100),
-      miterLimit: 1
+      tint: [1, 1, 1, 1],
+      thickness: 1 + t0 * 0.5,
+      miterLimit: 12
     })
   })
 }
