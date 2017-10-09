@@ -13,7 +13,7 @@ Draw pretty lines in **WebGL** with the **Canvas2D** API.
 
 ```javascript
 import createREGL from 'regl'
-import mat4 from 'gl-mat4'
+import { mat4 } from 'gl-matrix'
 import { LineBuilder } from 'regl-line-builder'
 
 const regl = createREGL()
@@ -34,7 +34,10 @@ const lines = LineBuilder.create(regl, {
 })
 const ctx = lines.getContext()
 
-ctx.lineWidth = 1
+ctx.save()
+ctx.rotate(-Math.PI / 4)
+ctx.lineWidth = 2
+ctx.strokeStyle = '#fff000'
 ctx.beginPath()
 ctx.moveTo(300, 300)
 ctx.lineTo(-300, -300)
@@ -42,8 +45,10 @@ ctx.lineTo(-300, -500)
 ctx.lineTo(300, -300)
 ctx.closePath()
 ctx.stroke()
+ctx.strokeRect(-500, 700, 1000, 1400)
+ctx.restore()
 
-ctx.lineWidth = 2
+ctx.rotate(Math.PI / 4)
 ctx.beginPath()
 ctx.moveTo(-300, 300)
 ctx.lineTo(300, -300)
@@ -51,6 +56,7 @@ ctx.lineTo(300, -500)
 ctx.lineTo(-300, -300)
 ctx.closePath()
 ctx.stroke()
+ctx.strokeRect(-500, 700, 1000, 1400)
 
 regl.frame(({ tick }) => {
   const { sin } = Math
@@ -63,7 +69,7 @@ regl.frame(({ tick }) => {
     })
 
     lines.draw({
-      color: [0, 0, 0],
+      model: mat4.identity([]),
       thickness: (8 / 100) + t0 * (6 / 100),
       miterLimit: 1
     })
