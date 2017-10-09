@@ -1,6 +1,7 @@
 import { vec2, mat2d } from 'gl-matrix'
 import { setRGB } from './utils/color'
 import { inherit } from './utils/ctor'
+import { warnOnce } from './utils/logger'
 import { line } from './shaders/line'
 
 var FLOAT_BYTES = Float32Array.BYTES_PER_ELEMENT
@@ -634,10 +635,13 @@ inherit(null, LineBuilder, {
   //
 
   lineDashOffset: function () {
-    return {}
+    return {
+      get: warnOnce('lineDashOffset not implemented'),
+      set: warnOnce('lineDashOffset not implemented')
+    }
   },
 
-  setLineDash: function () {},
+  setLineDash: warnOnce('setLineDash not implemented'),
 
   // Vector Space Transforms
   // -----------------------
