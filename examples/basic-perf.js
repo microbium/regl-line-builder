@@ -18,7 +18,7 @@ const stats = new Stats()
 
 const lines = LineBuilder.create(regl, {
   stride: 2,
-  maxSize: Math.pow(2, 16)
+  bufferSize: Math.pow(2, 16)
 })
 const ctx = lines.getContext()
 

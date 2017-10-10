@@ -23,7 +23,7 @@ test('builder - create resources', function (t) {
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
-    maxSize: 1024
+    bufferSize: 1024
   })
 
   var position = lines.resources.position
@@ -46,13 +46,57 @@ test('builder - create resources', function (t) {
   t.end()
 })
 
+test('builder - resize resources', function (t) {
+  var gl = createContext(16, 16)
+  var regl = createREGL(gl)
+
+  var lines = LineBuilder.create(regl, {
+    stride: 2,
+    bufferSize: 1024
+  })
+
+  var position = lines.resources.position
+  var offset = lines.resources.offset
+  var elements = lines.resources.elements
+
+  t.equal(position.view.constructor, Float32Array,
+    'position.view')
+  t.equal(position.view.length, 1024 * 2 * 2,
+    'position.view.length')
+  t.equal(offset.view.constructor, Float32Array,
+    'offset.view')
+  t.equal(offset.view.length, 1024 * 2,
+    'offset.view.length')
+  t.equal(elements.view.constructor, Uint16Array,
+    'elements.view')
+  t.equal(elements.view.length, 1024 * 4,
+    'elements.view.length')
+
+  lines.resize(2048)
+
+  t.equal(position.view.constructor, Float32Array,
+    'position.view')
+  t.equal(position.view.length, 2048 * 2 * 2,
+    'position.view.length')
+  t.equal(offset.view.constructor, Float32Array,
+    'offset.view')
+  t.equal(offset.view.length, 2048 * 2,
+    'offset.view.length')
+  t.equal(elements.view.constructor, Uint16Array,
+    'elements.view')
+  t.equal(elements.view.length, 2048 * 4,
+    'elements.view.length')
+
+  t.end()
+})
+
 test('builder - create paths', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
-    maxSize: 1024
+    bufferSize: 1024
   })
   var ctx = lines.getContext()
   var cursor = lines.state.cursor
@@ -148,7 +192,7 @@ test('builder - close paths', function (t) {
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
-    maxSize: 1024
+    bufferSize: 1024
   })
   var ctx = lines.getContext()
   var cursor = lines.state.cursor
@@ -208,7 +252,7 @@ test('builder - set line width', function (t) {
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
-    maxSize: 1024
+    bufferSize: 1024
   })
   var ctx = lines.getContext()
   var style = lines.state.style
@@ -239,7 +283,7 @@ test('builder - set stroke style', function (t) {
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
-    maxSize: 1024
+    bufferSize: 1024
   })
   var ctx = lines.getContext()
   var style = lines.state.style
@@ -272,7 +316,7 @@ test('builder - reset state', function (t) {
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
-    maxSize: 1024
+    bufferSize: 1024
   })
   var ctx = lines.getContext()
   var state = lines.state
@@ -378,7 +422,7 @@ test('builder - save and restore state', function (t) {
 
   var lines = LineBuilder.create(regl, {
     stride: 2,
-    maxSize: 1024
+    bufferSize: 1024
   })
   var ctx = lines.getContext()
   var state = lines.state

@@ -30,7 +30,7 @@ const setupCamera = regl({
 
 const lines = LineBuilder.create(regl, {
   stride: 2,
-  maxSize: 300
+  bufferSize: 300
 })
 const ctx = lines.getContext()
 

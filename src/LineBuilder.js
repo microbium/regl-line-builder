@@ -5,7 +5,6 @@ import { warnOnce } from './utils/logger'
 import { line } from './shaders/line'
 
 var FLOAT_BYTES = Float32Array.BYTES_PER_ELEMENT
-var INT_BYTES = Uint16Array.BYTES_PER_ELEMENT
 var CONTEXT_METHODS = [
   'beginPath',
   'moveTo',
@@ -51,8 +50,8 @@ inherit(null, LineBuilder, {
       vertex: 0,
       element: 0,
       quad: 0,
-      stride: opts.stride,
-      max: opts.maxSize
+      stride: opts.stride || 2,
+      max: opts.bufferSize || 1024
     }
     var sync = {
       vertex: 0
@@ -82,60 +81,65 @@ inherit(null, LineBuilder, {
     var regl = this.context.regl
     var cursor = this.state.cursor
 
-    var positionView = new Float32Array(cursor.max * cursor.stride * 2)
-    var offsetView = new Float32Array(cursor.max * 2)
-    var colorView = new Float32Array(cursor.max * 4 * 2)
-    var udView = new Float32Array(cursor.max * 2 * 3)
-    var elementsView = new Uint16Array(cursor.max * 4)
-
+    var views = this.createResourceViews(cursor.max, cursor.stride)
     var positionBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
-      length: positionView.length * FLOAT_BYTES
+      data: views.position
     })
     var offsetBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
-      length: offsetView.length * FLOAT_BYTES
+      data: views.offset
     })
     var colorBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
-      length: colorView.length * FLOAT_BYTES
+      data: views.color
     })
     var udBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
-      length: udView.length * FLOAT_BYTES
+      data: views.ud
     })
     var elementsBuffer = regl.elements({
       usage: 'dynamic',
       type: 'uint16',
       primitive: 'triangles',
-      length: elementsView.length * INT_BYTES
+      data: views.elements
     })
 
     return {
       position: {
-        view: positionView,
+        view: views.position,
         buffer: positionBuffer
       },
       offset: {
-        view: offsetView,
+        view: views.offset,
         buffer: offsetBuffer
       },
       color: {
-        view: colorView,
+        view: views.color,
         buffer: colorBuffer
       },
       ud: {
-        view: udView,
+        view: views.ud,
         buffer: udBuffer
       },
       elements: {
-        view: elementsView,
+        view: views.elements,
         buffer: elementsBuffer
       }
+    }
+  },
+
+  createResourceViews: function (size, stride) {
+    return {
+      position: new Float32Array(size * stride * 2),
+      offset: new Float32Array(size * 2),
+      color: new Float32Array(size * 4 * 2),
+      ud: new Float32Array(size * 2 * 3),
+      elements: new Uint16Array(size * 4)
     }
   },
 
@@ -179,6 +183,7 @@ inherit(null, LineBuilder, {
       aspect: function (params, context) {
         return params.viewportWidth / params.viewportHeight
       },
+      // FIXME: Still not correct ...
       thickness: function (params, context) {
         return context.thickness /
           (200 * params.viewportHeight / params.viewportWidth)
@@ -251,10 +256,27 @@ inherit(null, LineBuilder, {
     return map
   },
 
-  // TODO: Resize resource buffers
-  resize: function (count) {
+  resize: function (size) {
     var cursor = this.state.cursor
-    cursor.max = count
+    var resources = this.resources
+    var nextViews = this.createResourceViews(size, cursor.stride)
+
+    cursor.max = size
+    resources.position.view = nextViews.position
+    resources.position.buffer({
+      data: nextViews.position })
+    resources.offset.view = nextViews.offset
+    resources.offset.buffer({
+      data: nextViews.offset })
+    resources.color.view = nextViews.color
+    resources.color.buffer({
+      data: nextViews.color })
+    resources.ud.view = nextViews.ud
+    resources.ud.buffer({
+      data: nextViews.ud })
+    resources.elements.view = nextViews.elements
+    resources.elements.buffer({
+      data: nextViews.elements })
   },
 
   reset: function () {
