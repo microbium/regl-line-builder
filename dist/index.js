@@ -477,9 +477,18 @@ function inherit (ParentCtor, Ctor, proto) {
   Object.assign(Ctor.prototype, proto);
 }
 
-var frag = "precision highp float;\n#define GLSLIFY 1\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  gl_FragColor = vColor;\n}\n";
+function warnOnce (message) {
+  var didWarn = false;
+  return function () {
+    if (didWarn) return
+    didWarn = true;
+    console.warn(message);
+  }
+}
 
-var vert = "// Based on WebGL lines demo\n// (c) 2015 Matt DesLauriers. MIT License\n// https://github.com/mattdesl/webgl-lines/\n\nprecision highp float;\n#define GLSLIFY 1\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\nuniform float aspect;\n\nuniform float thickness;\nuniform float miterLimit;\n\n// TODO: Enable compiling for 2 or 3 dimensional lines\nattribute vec2 prevPosition;\nattribute vec2 currPosition;\nattribute vec2 nextPosition;\n// attribute vec3 prevPosition;\n// attribute vec3 currPosition;\n// attribute vec3 nextPosition;\n\nattribute float offset;\nattribute vec4 color;\nattribute vec2 ud;\n\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  vec2 aspectVec = vec2(aspect, 1.0);\n  mat4 projViewModel = projection * view * model;\n\n  // TODO: Refactor to import/export as standalone function\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 0.0, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 0.0, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);\n\n  // get 2D screen space with W divide and aspect correction\n  vec2 prevScreen = prevProjected.xy / prevProjected.w * aspectVec;\n  vec2 currScreen = currProjected.xy / currProjected.w * aspectVec;\n  vec2 nextScreen = nextProjected.xy / nextProjected.w * aspectVec;\n\n  vec2 dir = vec2(0.0);\n  float len = thickness;\n\n  // starting point uses (next - current)\n  if (currScreen == prevScreen) {\n    dir = normalize(nextScreen - currScreen);\n  }\n  // ending point uses (current - previous)\n  else if (currScreen == nextScreen) {\n    dir = normalize(currScreen - prevScreen);\n  }\n  // somewhere in middle, needs a join\n  else {\n    // get directions from (C - B) and (B - A)\n    vec2 dirA = normalize((currScreen - prevScreen));\n    if (int(miterLimit) == 0) {\n      dir = dirA;\n    } else {\n      vec2 dirB = normalize((nextScreen - currScreen));\n      // now compute the miter join normal and length\n      vec2 tangent = normalize(dirA + dirB);\n      vec2 perp = vec2(-dirA.y, dirA.x);\n      vec2 miter = vec2(-tangent.y, tangent.x);\n      dir = tangent;\n      len /= dot(miter, perp);\n    }\n  }\n\n  vec2 normal = vec2(-dir.y, dir.x) *\n    clamp(len, 0.0, max(thickness, miterLimit)) / aspectVec;\n\n  vColor = color;\n  vUD = ud;\n\n  gl_Position = currProjected + vec4(normal * offset, 0.0, 1.0);\n}\n";
+var frag = "precision highp float;\n#define GLSLIFY 1\nuniform vec4 tint;\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  gl_FragColor = vColor * tint;\n}\n";
+
+var vert = "// Based on WebGL lines demo\n// (c) 2015 Matt DesLauriers. MIT License\n// https://github.com/mattdesl/webgl-lines/\n\nprecision highp float;\n#define GLSLIFY 1\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\nuniform float aspect;\n\nuniform float thickness;\nuniform float miterLimit;\n\n// TODO: Enable compiling for 2 or 3 dimensional lines\nattribute vec2 prevPosition;\nattribute vec2 currPosition;\nattribute vec2 nextPosition;\n// attribute vec3 prevPosition;\n// attribute vec3 currPosition;\n// attribute vec3 nextPosition;\n\nattribute float offset;\nattribute vec4 color;\nattribute vec2 ud;\n\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  vec2 aspectVec = vec2(aspect, 1.0);\n  mat4 projViewModel = projection * view * model;\n\n  // TODO: Refactor to import/export as standalone function\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 0.0, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 0.0, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);\n\n  // get 2D screen space with W divide and aspect correction\n  vec2 prevScreen = prevProjected.xy / prevProjected.w * aspectVec;\n  vec2 currScreen = currProjected.xy / currProjected.w * aspectVec;\n  vec2 nextScreen = nextProjected.xy / nextProjected.w * aspectVec;\n\n  vec2 dir = vec2(0.0);\n  float len = thickness;\n\n  // starting point uses (next - current)\n  if (currScreen == prevScreen) {\n    dir = normalize(nextScreen - currScreen);\n  }\n  // ending point uses (current - previous)\n  else if (currScreen == nextScreen) {\n    dir = normalize(currScreen - prevScreen);\n  }\n  // somewhere in middle, needs a join\n  else {\n    // get directions from (C - B) and (B - A)\n    vec2 dirA = normalize((currScreen - prevScreen));\n    if (int(miterLimit) == -1) {\n      dir = dirA;\n    } else {\n      vec2 dirB = normalize((nextScreen - currScreen));\n      // now compute the miter join normal and length\n      vec2 tangent = normalize(dirA + dirB);\n      vec2 perp = vec2(-dirA.y, dirA.x);\n      vec2 miter = vec2(-tangent.y, tangent.x);\n      dir = tangent;\n      len /= dot(miter, perp);\n    }\n  }\n\n  vec2 normal = vec2(-dir.y, dir.x) *\n    clamp(len, 0.0, max(thickness, miterLimit)) / aspectVec;\n\n  vColor = color;\n  vUD = ud;\n\n  gl_Position = currProjected + vec4(normal * offset, 0.0, 1.0);\n}\n";
 
 var line = {
   frag: frag,
@@ -487,7 +496,6 @@ var line = {
 };
 
 var FLOAT_BYTES = Float32Array.BYTES_PER_ELEMENT;
-var INT_BYTES = Uint16Array.BYTES_PER_ELEMENT;
 var CONTEXT_METHODS = [
   'beginPath',
   'moveTo',
@@ -533,8 +541,8 @@ inherit(null, LineBuilder, {
       vertex: 0,
       element: 0,
       quad: 0,
-      stride: opts.stride,
-      max: opts.maxSize
+      stride: opts.stride || 2,
+      max: opts.bufferSize || 1024
     };
     var sync = {
       vertex: 0
@@ -564,60 +572,65 @@ inherit(null, LineBuilder, {
     var regl = this.context.regl;
     var cursor = this.state.cursor;
 
-    var positionView = new Float32Array(cursor.max * cursor.stride * 2);
-    var offsetView = new Float32Array(cursor.max * 2);
-    var colorView = new Float32Array(cursor.max * 4 * 2);
-    var udView = new Float32Array(cursor.max * 2 * 3);
-    var elementsView = new Uint16Array(cursor.max * 4);
-
+    var views = this.createResourceViews(cursor.max, cursor.stride);
     var positionBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
-      length: positionView.length * FLOAT_BYTES
+      data: views.position
     });
     var offsetBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
-      length: offsetView.length * FLOAT_BYTES
+      data: views.offset
     });
     var colorBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
-      length: colorView.length * FLOAT_BYTES
+      data: views.color
     });
     var udBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
-      length: udView.length * FLOAT_BYTES
+      data: views.ud
     });
     var elementsBuffer = regl.elements({
       usage: 'dynamic',
       type: 'uint16',
       primitive: 'triangles',
-      length: elementsView.length * INT_BYTES
+      data: views.elements
     });
 
     return {
       position: {
-        view: positionView,
+        view: views.position,
         buffer: positionBuffer
       },
       offset: {
-        view: offsetView,
+        view: views.offset,
         buffer: offsetBuffer
       },
       color: {
-        view: colorView,
+        view: views.color,
         buffer: colorBuffer
       },
       ud: {
-        view: udView,
+        view: views.ud,
         buffer: udBuffer
       },
       elements: {
-        view: elementsView,
+        view: views.elements,
         buffer: elementsBuffer
       }
+    }
+  },
+
+  createResourceViews: function (size, stride) {
+    return {
+      position: new Float32Array(size * stride * 2),
+      offset: new Float32Array(size * 2),
+      color: new Float32Array(size * 4 * 2),
+      ud: new Float32Array(size * 2 * 3),
+      elements: new Uint16Array(size * 4)
     }
   },
 
@@ -658,12 +671,20 @@ inherit(null, LineBuilder, {
     var state = this.state;
 
     var uniforms = {
-      aspect: function (params) {
+      aspect: function (params, context) {
         return params.viewportWidth / params.viewportHeight
       },
+
+      thickness: function (params, context) {
+        return context.thickness /
+          (200 * params.viewportHeight / params.viewportWidth)
+      },
+      miterLimit: function (params, context) {
+        return context.miterLimit /
+          (200 * params.viewportHeight / params.viewportWidth)
+      },
       model: regl.prop('model'),
-      thickness: regl.prop('thickness'),
-      miterLimit: regl.prop('miterLimit')
+      tint: regl.prop('tint')
     };
     var count = function () {
       return state.cursor.quad * 6
@@ -726,9 +747,27 @@ inherit(null, LineBuilder, {
     return map
   },
 
-  resize: function (count) {
+  resize: function (size) {
     var cursor = this.state.cursor;
-    cursor.max = count;
+    var resources = this.resources;
+    var nextViews = this.createResourceViews(size, cursor.stride);
+
+    cursor.max = size;
+    resources.position.view = nextViews.position;
+    resources.position.buffer({
+      data: nextViews.position });
+    resources.offset.view = nextViews.offset;
+    resources.offset.buffer({
+      data: nextViews.offset });
+    resources.color.view = nextViews.color;
+    resources.color.buffer({
+      data: nextViews.color });
+    resources.ud.view = nextViews.ud;
+    resources.ud.buffer({
+      data: nextViews.ud });
+    resources.elements.view = nextViews.elements;
+    resources.elements.buffer({
+      data: nextViews.elements });
   },
 
   reset: function () {
@@ -936,7 +975,7 @@ inherit(null, LineBuilder, {
   },
 
   arc: function (x, y, radius, startAngle, endAngle, anticlockwise) {
-    var delta = endAngle - startAngle;
+    var delta = Math.abs(endAngle - startAngle);
     var dir = anticlockwise === true ? -1 : 1;
     var count = Math.ceil(delta / (Math.PI / 10));
 
@@ -1050,8 +1089,8 @@ inherit(null, LineBuilder, {
     this.beginPath();
     this.moveTo(x, y);
     this.lineTo(x + width, y);
-    this.lineTo(x + width, y - height);
-    this.lineTo(x, y - height);
+    this.lineTo(x + width, y + height);
+    this.lineTo(x, y + height);
     this.closePath();
     this.stroke();
   },
@@ -1095,10 +1134,13 @@ inherit(null, LineBuilder, {
   },
 
   lineDashOffset: function () {
-    return {}
+    return {
+      get: warnOnce('lineDashOffset not implemented'),
+      set: warnOnce('lineDashOffset not implemented')
+    }
   },
 
-  setLineDash: function () {},
+  setLineDash: warnOnce('setLineDash not implemented'),
 
   setTransform: function (a, b, c, d, dx, dy) {
     var transform = this.state.transform;
