@@ -401,10 +401,10 @@ inherit(null, LineBuilder, {
     var aid = aiu + 1
     var biu = (cursor.vertex + 1) * 2 * 2
     var bid = biu + 1
-    udView[aiu] = 0
-    udView[aiu + 2] = 1
-    udView[biu] = 0
-    udView[biu + 2] = 1
+    udView[aiu] = 1
+    udView[aiu + 2] = -1
+    udView[biu] = 1
+    udView[biu + 2] = -1
     udView[aid] = udView[aid + 2] = 0
     udView[bid] = udView[bid + 2] = 0
 
@@ -463,8 +463,8 @@ inherit(null, LineBuilder, {
 
     var aiu = (cursor.vertex - 1) * 2 * 2
     var aid = aiu + 1
-    udView[aiu] = 0
-    udView[aiu + 2] = 1
+    udView[aiu] = 1
+    udView[aiu + 2] = -1
     udView[aid] = udView[aid + 2] = totalLength
 
     var air = cursor.vertex * 4 * 2
@@ -581,8 +581,8 @@ inherit(null, LineBuilder, {
     var bid = biu + 1
     var aiu = ai * 2 * 2
     var aid = aiu + 1
-    udView[aiu] = 0
-    udView[aiu + 2] = 1
+    udView[aiu] = 1
+    udView[aiu + 2] = -1
     udView[aid] = udView[aid + 2] = udView[bid]
 
     var bir = bi * 4 * 2
