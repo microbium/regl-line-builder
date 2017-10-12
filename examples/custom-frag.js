@@ -21,9 +21,14 @@ const stats = new Stats()
 const frag = `
 precision highp float;
 uniform vec2 resolution;
+varying vec4 vColor;
 void main() {
   vec2 coord = gl_FragCoord.xy / resolution;
-  gl_FragColor = vec4(coord.x, 0.0, coord.y, 1.0);
+  gl_FragColor = vColor * vec4(
+    coord.x,
+    0.6 - distance(coord, vec2(0.5)),
+    coord.y,
+    1.0);
 }
 `
 const lines = LineBuilder.create(regl, {
@@ -36,7 +41,7 @@ const ctx = lines.getContext()
 ctx.save()
 ctx.rotate(-Math.PI / 4)
 ctx.lineWidth = 20
-ctx.strokeStyle = '#fff000'
+ctx.strokeStyle = '#eeccff'
 ctx.beginPath()
 ctx.moveTo(300, 300)
 ctx.lineTo(-300, -300)
@@ -49,6 +54,7 @@ ctx.restore()
 
 ctx.rotate(Math.PI / 4)
 ctx.lineWidth = 10
+ctx.strokeStyle = '#ffeecc'
 ctx.beginPath()
 ctx.moveTo(-300, 300)
 ctx.lineTo(300, -300)
