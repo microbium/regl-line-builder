@@ -35,7 +35,7 @@ export function LineBuilder (regl, opts) {
   this.state = this.createState(opts)
   this.resources = this.createResources()
   this.attributes = this.createAttributes()
-  this.draw = this.createDrawCommand()
+  this.draw = this.createDrawCommand(opts)
 }
 
 inherit(null, LineBuilder, {
@@ -173,7 +173,7 @@ inherit(null, LineBuilder, {
     }
   },
 
-  createDrawCommand: function () {
+  createDrawCommand: function (opts) {
     var attributes = this.attributes
     var regl = this.context.regl
     var resources = this.resources
@@ -200,8 +200,8 @@ inherit(null, LineBuilder, {
     }
     // TODO: Share base regl command between multiple LineBuilder instances
     var drawCommand = regl({
-      vert: line.vert,
-      frag: line.frag,
+      vert: opts.vert || line.vert,
+      frag: opts.frag || line.frag,
       uniforms: uniforms,
       attributes: attributes,
       elements: resources.elements.buffer,
