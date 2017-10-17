@@ -32,9 +32,11 @@ void main() {
 }
 `
 const lines = LineBuilder.create(regl, {
-  frag,
   stride: 2,
-  bufferSize: 300
+  bufferSize: 300,
+  drawArgs: {
+    frag
+  }
 })
 const ctx = lines.getContext()
 

@@ -173,6 +173,18 @@ inherit(null, LineBuilder, {
     }
   },
 
+  combineDrawArgs: function (defaultArgs, userArgs) {
+    var args = Object.assign({}, defaultArgs)
+    Object.keys(userArgs).forEach(function (key) {
+      if (key === 'uniforms' || key === 'attributes') {
+        args[key] = Object.assign({}, defaultArgs[key], userArgs[key])
+      } else {
+        args[key] = userArgs[key]
+      }
+    })
+    return args
+  },
+
   createDrawCommand: function (opts) {
     var attributes = this.attributes
     var regl = this.context.regl
@@ -198,10 +210,10 @@ inherit(null, LineBuilder, {
     var count = function () {
       return state.cursor.quad * 6
     }
-    // TODO: Share base regl command between multiple LineBuilder instances
-    var drawCommand = regl({
-      vert: opts.vert || line.vert,
-      frag: opts.frag || line.frag,
+
+    var defaultDrawArgs = {
+      vert: line.vert,
+      frag: line.frag,
       uniforms: uniforms,
       attributes: attributes,
       elements: resources.elements.buffer,
@@ -215,7 +227,13 @@ inherit(null, LineBuilder, {
           dst: 'one minus src alpha'
         }
       }
-    })
+    }
+    var drawArgs = opts.drawArgs
+      ? this.combineDrawArgs(defaultDrawArgs, opts.drawArgs)
+      : defaultDrawArgs
+
+    // TODO: Share base regl command between multiple LineBuilder instances
+    var drawCommand = regl(drawArgs)
 
     return function (params) {
       if (state.sync.vertex < state.cursor.vertex) {

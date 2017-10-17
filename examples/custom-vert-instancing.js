@@ -29,8 +29,10 @@ const setupInstances = regl({
 const stats = new Stats()
 
 const lines = LineBuilder.create(regl, {
-  vert: vertShader,
-  bufferSize: 300
+  bufferSize: 300,
+  drawArgs: {
+    vert: vertShader
+  }
 })
 const ctx = lines.getContext()
 

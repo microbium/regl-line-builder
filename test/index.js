@@ -17,6 +17,66 @@ test('export line builder', function (t) {
   t.end()
 })
 
+test('combine draw args', function (t) {
+  var defaultArgs = {
+    vert: 'defaultVert',
+    frag: 'defaultFrag',
+    uniforms: {
+      defaultUniform: 1
+    },
+    attributes: {
+      defaultAttribute: 1
+    },
+    elements: 'defaultElements',
+    depth: { enable: false },
+    blend: {
+      enable: true,
+      equation: 'add',
+      func: {
+        src: 'src alpha',
+        dst: 'one minus src alpha'
+      }
+    }
+  }
+  var userArgs = {
+    frag: 'userFrag',
+    uniforms: {
+      userUniform: 2
+    },
+    attributes: {
+      userAttribute: 2
+    },
+    depth: { enable: true },
+    blend: { enable: false }
+  }
+  var drawArgs = LineBuilder.prototype.combineDrawArgs.call(null, defaultArgs, userArgs)
+
+  t.equal(drawArgs.vert, 'defaultVert',
+    'drawArgs.vert')
+  t.equal(drawArgs.frag, 'userFrag',
+    'drawArgs.frag')
+  t.deepEqual(drawArgs.uniforms,
+    {
+      defaultUniform: 1,
+      userUniform: 2
+    },
+    'drawArgs.uniforms')
+  t.deepEqual(drawArgs.attributes,
+    {
+      defaultAttribute: 1,
+      userAttribute: 2
+    },
+    'drawArgs.attributes')
+  t.deepEqual(drawArgs.depth,
+    { enable: true },
+    'drawArgs.depth')
+  t.deepEqual(drawArgs.blend,
+    { enable: false },
+    'drawArgs.blend')
+
+  t.end()
+})
+
 test('builder - create resources', function (t) {
   var gl = createContext(16, 16)
   var regl = createREGL(gl)
