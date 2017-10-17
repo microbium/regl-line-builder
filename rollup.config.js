@@ -1,26 +1,21 @@
-var resolve = require('rollup-plugin-node-resolve')
-var commonjs = require('rollup-plugin-commonjs')
 var glslify = require('@shotamatsuda/rollup-plugin-glslify')
 var cleanup = require('rollup-plugin-cleanup')
 
 var NODE_ENV = process.env.NODE_ENV
 
 var commonPlugins = [
-  resolve({
-    main: false,
-    modulesOnly: true
-  }),
-  commonjs(),
   glslify()
 ]
 
-// TODO: Should module and umd builds treat gl-matrix as external
-// and not inline used methods?
 var configs = {
   development: {
     plugins: commonPlugins
   },
   production: {
+    external: ['gl-matrix'],
+    globals: {
+      'gl-matrix': 'glMatrix'
+    },
     plugins: [].concat(commonPlugins, [
       cleanup({
         maxEmptyLines: -1
