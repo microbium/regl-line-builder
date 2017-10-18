@@ -1,7 +1,3 @@
-// Based on WebGL lines demo
-// (c) 2015 Matt DesLauriers. MIT License
-// https://github.com/mattdesl/webgl-lines/
-
 precision highp float;
 
 #pragma glslify: computeMiterNormal = require(./compute-miter-normal)

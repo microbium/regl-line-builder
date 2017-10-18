@@ -1,3 +1,7 @@
+// Based on WebGL lines demo
+// (c) 2015 Matt DesLauriers. MIT License
+// https://github.com/mattdesl/webgl-lines/
+
 // TODO: Maybe make separate package to make reuse with custom shaders easier?
 // TODO: Maybe use struct to pass some of this data?
 vec2 computeMiterNormal (
