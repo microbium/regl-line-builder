@@ -48,7 +48,6 @@ function draw ({ tick }) {
 
   setupCamera(() => {
     regl.clear({
-      model: mat4.identity([]),
       color: [1, 1, 1, 1],
       depth: 1
     })
