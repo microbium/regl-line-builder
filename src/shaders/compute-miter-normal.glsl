@@ -48,7 +48,7 @@ vec2 computeMiterNormal (
   }
 
   return vec2(-dir.y, dir.x) *
-    clamp(len, 0.0, max(thickness, miterLimit)) / aspectVec;
+    clamp(len, 0.0, miterLimit) / aspectVec;
 }
 
 #pragma glslify: export(computeMiterNormal)
