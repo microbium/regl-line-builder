@@ -1,8 +1,8 @@
 ## TODO `1.0`
 
-- [x] Add method to destroy/release all resource buffers.
-- [ ] Fix viewport relative `thickness`.
 - [ ] Add docs for API and supported Canvas2D features.
+- [x] Add method to destroy/release all resource buffers.
+- [x] Fix viewport relative `thickness`.
 - [x] Allow custom vertex and fragment shader input (as well as other draw command parameters).
 - [x] Export vertex transform GLSL method for custom vertex shaders.
 - [x] Add example for custom shaders.

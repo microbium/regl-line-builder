@@ -30,6 +30,7 @@ void main() {
   vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);
 
   vec2 miterOffset = computeMiterOffset(
+    projViewModel,
     aspect, thickness, miterLimit,
     prevProjected, currProjected, nextProjected);
 
