@@ -1,6 +1,6 @@
 precision highp float;
 
-#pragma glslify: computeMiterNormal = require(../../src/shaders/compute-miter-normal)
+#pragma glslify: computeMiterOffset = require(../../src/shaders/compute-miter-offset)
 
 uniform mat4 projection;
 uniform mat4 model;
@@ -39,12 +39,12 @@ void main() {
   vec4 nextProjected = projViewModel *
     vec4(rotatedPosition(nextPosition, angle), 0.0, 1.0);
 
-  vec2 normal = computeMiterNormal(
+  vec2 miterOffset = computeMiterOffset(
     aspect, thickness, miterLimit,
     prevProjected, currProjected, nextProjected);
 
   vColor = color;
   vUD = ud;
 
-  gl_Position = currProjected + vec4(normal * offset, 0.0, 1.0);
+  gl_Position = currProjected + vec4(miterOffset * offset, 0.0, 1.0);
 }

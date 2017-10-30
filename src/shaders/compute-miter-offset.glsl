@@ -4,7 +4,7 @@
 
 // TODO: Maybe make separate package to make reuse with custom shaders easier?
 // TODO: Maybe use struct to pass some of this data?
-vec2 computeMiterNormal (
+vec2 computeMiterOffset (
   float aspect,
   float thickness,
   float miterLimit,
@@ -51,4 +51,4 @@ vec2 computeMiterNormal (
     clamp(len, 0.0, miterLimit) / aspectVec;
 }
 
-#pragma glslify: export(computeMiterNormal)
+#pragma glslify: export(computeMiterOffset)
