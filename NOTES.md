@@ -1,6 +1,8 @@
 ## TODO `1.0`
 
 - [ ] Add docs for API and supported Canvas2D features.
+- [ ] Add overloaded context methods for 3D space (adding `z` parameter to `moveTo`, `lineTo`, `translate` ...).
+- [ ] Add example for 3D space and perspective projection.
 - [x] Add method to destroy/release all resource buffers.
 - [x] Fix viewport relative `thickness`.
 - [x] Allow custom vertex and fragment shader input (as well as other draw command parameters).
@@ -10,6 +12,5 @@
 ## TODO future
 
 - [ ] Allow intermediate `lineWidth` changes (divergent from Canvas2D behavior, but a nice feature).
-- [ ] Add overloaded context methods for 3D space (adding `z` parameter to `moveTo`, `lineTo`, `translate` ...).
 - [ ] Add parameter for configuring segment precision (for `arc`).
 - [ ] Fix UV coordinates for skewed/mitered edges.
