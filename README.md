@@ -9,6 +9,7 @@
 
 Draw pretty lines in **WebGL** with the **Canvas2D** API.
 
+
 ## Example
 
 ```javascript
@@ -29,7 +30,6 @@ const setupCamera = regl({
 })
 
 const lines = LineBuilder.create(regl, {
-  stride: 2,
   bufferSize: 300
 })
 const ctx = lines.getContext()
@@ -73,12 +73,13 @@ regl.frame(({ tick }) => {
       model: mat4.identity([]),
       tint: [1, 1, 1, 1],
       thickness: 1 + t0 * 0.5,
-      miterLimit: 1
+      miterLimit: 12
     })
   })
 })
 
 ```
+
 
 ## Install
 
@@ -86,9 +87,12 @@ regl.frame(({ tick }) => {
 npm install regl-line-builder --save
 ```
 
+
 ## License
+
 (c) 2017 Jay Weeks. MIT License  
 (c) 2015 Matt DesLauriers where noted. MIT License
+
 
 [stability-url]: https://nodejs.org/api/documentation.html#documentation_stability_index
 [stability-image]: https://img.shields.io/badge/stability-experimental-orange.svg?style=flat-square
@@ -97,5 +101,5 @@ npm install regl-line-builder --save
 [style-url]: https://standardjs.com
 [style-image]: https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square
 [size-image]: https://badge-size.herokuapp.com/jpweeks/regl-line-builder/master/dist/index.min.js.svg?compression=gzip&style=flat-square
-[pretty-face-url]: http://requirebin.com/?gist=f74993f81448ad894262d277534399a9
+[pretty-face-url]: http://requirebin.com/?gist=aa0328bbb030e868863fc57e3b17f8e2
 [pretty-face-image]: ./assets/images/pretty-face.png
