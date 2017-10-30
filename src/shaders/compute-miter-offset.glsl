@@ -5,7 +5,8 @@
 // TODO: Maybe make separate package to make reuse with custom shaders easier?
 // TODO: Maybe use struct to pass some of this data?
 vec2 computeMiterOffset (
-  mat4 projectionViewModel,
+  mat4 projection,
+  int adjustProjectedThickness,
   float aspect,
   float thickness,
   float miterLimit,
@@ -14,16 +15,21 @@ vec2 computeMiterOffset (
   vec4 nextProjected
 ) {
   vec2 aspectVec = vec2(aspect, 1.0);
-  vec4 singlePixelProjected = projectionViewModel * vec4(2.0, 0.0, 0.0, 1.0);
 
   // get 2D screen space with W divide and aspect correction
   vec2 prevScreen = prevProjected.xy / prevProjected.w * aspectVec;
   vec2 currScreen = currProjected.xy / currProjected.w * aspectVec;
   vec2 nextScreen = nextProjected.xy / nextProjected.w * aspectVec;
-  vec2 singlePixel = singlePixelProjected.xy / singlePixelProjected.w * aspectVec;
+
+  float thicknessScale = 1.0;
+  if (adjustProjectedThickness == 1) {
+    vec4 singlePixelProjected = projection * vec4(2.0, 0.0, 0.0, 1.0);
+    vec2 singlePixel = singlePixelProjected.xy / singlePixelProjected.w * aspectVec;
+    thicknessScale = singlePixel.x;
+  }
 
   vec2 dir = vec2(0.0);
-  float len = thickness * singlePixel.x;
+  float len = thickness * thicknessScale;
 
   // starting point uses (next - current)
   if (currScreen == prevScreen) {
@@ -51,7 +57,7 @@ vec2 computeMiterOffset (
   }
 
   return vec2(-dir.y, dir.x) *
-    clamp(len, 0.0, miterLimit) / aspectVec;
+    clamp(len, 0.0, miterLimit * thicknessScale) / aspectVec;
 }
 
 #pragma glslify: export(computeMiterOffset)

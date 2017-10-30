@@ -6,6 +6,7 @@ uniform mat4 projection;
 uniform mat4 model;
 uniform mat4 view;
 uniform float aspect;
+uniform int adjustProjectedThickness;
 
 uniform float thickness;
 uniform float miterLimit;
@@ -40,6 +41,7 @@ void main() {
     vec4(rotatedPosition(nextPosition, angle), 0.0, 1.0);
 
   vec2 miterOffset = computeMiterOffset(
+    projection, adjustProjectedThickness,
     aspect, thickness, miterLimit,
     prevProjected, currProjected, nextProjected);
 
