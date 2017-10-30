@@ -1,17 +1,16 @@
 import createREGL from 'regl'
 import { mat4 } from 'gl-matrix'
 import Stats from '@jpweeks/rstats'
-import { LineBuilder, projectThickness } from '../index'
+import { LineBuilder } from '../index'
 
 const regl = createREGL()
-const projection = mat4.create()
 const setupCamera = regl({
   uniforms: {
     view: mat4.identity([]),
     projection: ({ viewportWidth, viewportHeight }) => {
       const w = viewportWidth / 2
       const h = viewportHeight / 2
-      return mat4.ortho(projection, -w, w, -h, h, 0, 10)
+      return mat4.ortho([], -w, w, -h, h, 0, 10)
     }
   }
 })
@@ -63,7 +62,7 @@ regl.frame(({ tick }) => {
     lines.draw({
       model: mat4.identity([]),
       tint: [1, 1, 1, 1],
-      thickness: projectThickness(projection, 1 + t0 * 0.5),
+      thickness: 1 + t0 * 0.5,
       miterLimit: 12
     })
   })
