@@ -160,7 +160,6 @@ test('builder - create paths', function (t) {
   })
   var ctx = lines.getContext()
   var cursor = lines.state.cursor
-  var paths = lines.state.paths
   var position = lines.resources.position
   var offset = lines.resources.offset
 
@@ -177,11 +176,6 @@ test('builder - create paths', function (t) {
     'cursor.element')
   t.equal(cursor.vertex, 6,
     'cursor.vertex')
-
-  t.equal(paths[0].offset, 0,
-    'paths[0].offset')
-  t.equal(paths[0].count, 4,
-    'paths[0].count')
 
   t.deepEqual(
     slice.call(position.view, 0, 6 * 2 * 2), [
@@ -212,11 +206,6 @@ test('builder - create paths', function (t) {
     'cursor.element')
   t.equal(cursor.vertex, 13,
     'cursor.vertex')
-
-  t.equal(paths[1].offset, 4,
-    'paths[1].offset')
-  t.equal(paths[1].count, 5,
-    'paths[1].count')
 
   t.deepEqual(
     slice.call(position.view, 0, 13 * 2 * 2), [
@@ -256,7 +245,6 @@ test('builder - close paths', function (t) {
   })
   var ctx = lines.getContext()
   var cursor = lines.state.cursor
-  var paths = lines.state.paths
   var position = lines.resources.position
   var offset = lines.resources.offset
 
@@ -274,13 +262,6 @@ test('builder - close paths', function (t) {
     'cursor.element')
   t.equal(cursor.vertex, 7,
     'cursor.vertex')
-
-  t.equal(paths[0].offset, 0,
-    'paths[0].offset')
-  t.equal(paths[0].count, 5,
-    'paths[0].count')
-  t.equal(paths[0].isClosed, true,
-    'paths[0].isClosed')
 
   t.deepEqual(
     slice.call(position.view, 0, 7 * 2 * 2), [
@@ -382,7 +363,6 @@ test('builder - reset state', function (t) {
   var state = lines.state
   var cursor = state.cursor
   var style = state.style
-  var paths = state.paths
   var position = lines.resources.position
   var offset = lines.resources.offset
 
@@ -406,13 +386,6 @@ test('builder - reset state', function (t) {
     'style.lineWidth')
   t.deepEqual(style.color, [1, 0, 0, 0.5],
     'style.color')
-
-  t.equal(paths[0].offset, 0,
-    'paths[0].offset')
-  t.equal(paths[0].count, 4,
-    'paths[0].count')
-  t.equal(paths[0].isClosed, false,
-    'paths[0].isClosed')
 
   t.deepEqual(
     slice.call(position.view, 0, 6 * 2 * 2), [
@@ -448,13 +421,6 @@ test('builder - reset state', function (t) {
     'style.lineWidth')
   t.deepEqual(state.style.color, [0, 0, 0, 1],
     'style.color')
-
-  t.equal(paths[0].offset, 0,
-    'paths[0].offset')
-  t.equal(paths[0].count, 5,
-    'paths[0].count')
-  t.equal(paths[0].isClosed, false,
-    'paths[0].isClosed')
 
   t.deepEqual(
     slice.call(position.view, 0, 7 * 2 * 2), [

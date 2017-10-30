@@ -30,6 +30,15 @@ var CONTEXT_ACCESSORS = [
 
 var scratchVec2 = vec2.create()
 
+function LinePath () {
+  this.offset = 0
+  this.count = 0
+  this.totalLength = 0
+  this.isClosed = false
+}
+
+inherit(null, LinePath, {})
+
 export function LineBuilder (regl, opts) {
   this.context = this.createContext(regl)
   this.state = this.createState(opts)
@@ -72,8 +81,8 @@ inherit(null, LineBuilder, {
       transform: transform,
       activePath: null,
       prevPosition: vec2.create(),
-      paths: [],
-      saveStack: []
+      saveStack: [],
+      scratchPath: LinePath.create()
     }
   },
 
@@ -319,7 +328,7 @@ inherit(null, LineBuilder, {
     mat2d.identity(transform.matrix)
 
     state.activePath = null
-    state.paths.length = 0
+    state.saveStack.length = 0
   },
 
   // State Stack
@@ -370,15 +379,13 @@ inherit(null, LineBuilder, {
     var offset = !activePath ? 0
       : activePath.offset + activePath.count
 
-    var nextPath = {
-      offset: offset,
-      count: 0,
-      totalLength: 0,
-      isClosed: false
-    }
+    var nextPath = state.scratchPath
+    nextPath.offset = offset
+    nextPath.count = 0
+    nextPath.totalLength = 0
+    nextPath.isClosed = false
 
     state.activePath = nextPath
-    state.paths.push(nextPath)
   },
 
   moveTo: function (x, y) {
@@ -717,7 +724,6 @@ inherit(null, LineBuilder, {
     var activePath = this.state.activePath
     var transform = this.state.transform
     var pos = vec2.set(scratchVec2, x, y)
-    // TODO: Dan't depend on activePath state
     if (!transform.isIdentity && !activePath.isClosed) {
       vec2.transformMat2d(pos, pos, transform.matrix)
     }
