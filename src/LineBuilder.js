@@ -325,6 +325,15 @@ inherit(null, LineBuilder, {
     state.saveStack.length = 0
   },
 
+  destroy: function () {
+    var resources = this.resources
+    resources.position.buffer.destroy()
+    resources.offset.buffer.destroy()
+    resources.color.buffer.destroy()
+    resources.ud.buffer.destroy()
+    resources.elements.buffer.destroy()
+  },
+
   // State Stack
   // -----------
   //
