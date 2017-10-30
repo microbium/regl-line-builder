@@ -254,13 +254,13 @@ inherit(null, LineBuilder, {
     var color = resources.color
     var ud = resources.ud
     var elements = resources.elements
-    var byteOffset = 0
 
-    position.buffer.subdata(position.view, byteOffset)
-    offset.buffer.subdata(offset.view, byteOffset)
-    color.buffer.subdata(color.view, byteOffset)
-    ud.buffer.subdata(ud.view, byteOffset)
-    elements.buffer.subdata(elements.view, byteOffset)
+    // TODO: Use cursor position to subdata at byte offset
+    position.buffer.subdata(position.view)
+    offset.buffer.subdata(offset.view)
+    color.buffer.subdata(color.view)
+    ud.buffer.subdata(ud.view)
+    elements.buffer.subdata(elements.view)
   },
 
   getContext: function () {
