@@ -38,7 +38,7 @@ function warnOnce (message) {
 
 var frag = "precision highp float;\n#define GLSLIFY 1\nuniform vec4 tint;\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  gl_FragColor = vColor * tint;\n}\n";
 
-var vert = "// Based on WebGL lines demo\n// (c) 2015 Matt DesLauriers. MIT License\n// https://github.com/mattdesl/webgl-lines/\n\nprecision highp float;\n#define GLSLIFY 1\n\n// TODO: Maybe make separate package to make reuse with custom shaders easier?\n// TODO: Maybe use struct to pass some of this data?\nvec2 computeMiterNormal (\n  float aspect_0,\n  float thickness_0,\n  float miterLimit_0,\n  vec4 prevProjected_0,\n  vec4 currProjected_0,\n  vec4 nextProjected_0\n) {\n  vec2 aspectVec = vec2(aspect_0, 1.0);\n\n  // get 2D screen space with W divide and aspect correction\n  vec2 prevScreen = prevProjected_0.xy / prevProjected_0.w * aspectVec;\n  vec2 currScreen = currProjected_0.xy / currProjected_0.w * aspectVec;\n  vec2 nextScreen = nextProjected_0.xy / nextProjected_0.w * aspectVec;\n\n  vec2 dir = vec2(0.0);\n  float len = thickness_0;\n\n  // starting point uses (next - current)\n  if (currScreen == prevScreen) {\n    dir = normalize(nextScreen - currScreen);\n  }\n  // ending point uses (current - previous)\n  else if (currScreen == nextScreen) {\n    dir = normalize(currScreen - prevScreen);\n  }\n  // somewhere in middle, needs a join\n  else {\n    // get directions from (C - B) and (B - A)\n    vec2 dirA = normalize((currScreen - prevScreen));\n    if (int(miterLimit_0) == -1) {\n      dir = dirA;\n    } else {\n      vec2 dirB = normalize((nextScreen - currScreen));\n      // now compute the miter join normal and length\n      vec2 tangent = normalize(dirA + dirB);\n      vec2 perp = vec2(-dirA.y, dirA.x);\n      vec2 miter = vec2(-tangent.y, tangent.x);\n      dir = tangent;\n      len /= dot(miter, perp);\n    }\n  }\n\n  return vec2(-dir.y, dir.x) *\n    clamp(len, 0.0, max(thickness_0, miterLimit_0)) / aspectVec;\n}\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\nuniform float aspect;\n\nuniform float thickness;\nuniform float miterLimit;\n\n// TODO: Enable compiling for 2 or 3 dimensional lines\nattribute vec2 prevPosition;\nattribute vec2 currPosition;\nattribute vec2 nextPosition;\n\nattribute float offset;\nattribute vec4 color;\nattribute vec2 ud;\n\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 0.0, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 0.0, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);\n\n  vec2 normal = computeMiterNormal(\n    aspect, thickness, miterLimit,\n    prevProjected, currProjected, nextProjected);\n\n  vColor = color;\n  vUD = ud;\n\n  gl_Position = currProjected + vec4(normal * offset, 0.0, 1.0);\n}\n";
+var vert = "precision highp float;\n#define GLSLIFY 1\n\n// Based on WebGL lines demo\n// (c) 2015 Matt DesLauriers. MIT License\n// https://github.com/mattdesl/webgl-lines/\n\n// TODO: Maybe make separate package to make reuse with custom shaders easier?\n// TODO: Maybe use struct to pass some of this data?\nvec2 computeMiterOffset (\n  mat4 projectionViewModel,\n  float aspect_0,\n  float thickness_0,\n  float miterLimit_0,\n  vec4 prevProjected_0,\n  vec4 currProjected_0,\n  vec4 nextProjected_0\n) {\n  vec2 aspectVec = vec2(aspect_0, 1.0);\n  vec4 singlePixelProjected = projectionViewModel * vec4(2.0, 0.0, 0.0, 1.0);\n\n  // get 2D screen space with W divide and aspect correction\n  vec2 prevScreen = prevProjected_0.xy / prevProjected_0.w * aspectVec;\n  vec2 currScreen = currProjected_0.xy / currProjected_0.w * aspectVec;\n  vec2 nextScreen = nextProjected_0.xy / nextProjected_0.w * aspectVec;\n  vec2 singlePixel = singlePixelProjected.xy / singlePixelProjected.w * aspectVec;\n\n  vec2 dir = vec2(0.0);\n  float len = thickness_0 * singlePixel.x;\n\n  // starting point uses (next - current)\n  if (currScreen == prevScreen) {\n    dir = normalize(nextScreen - currScreen);\n  }\n  // ending point uses (current - previous)\n  else if (currScreen == nextScreen) {\n    dir = normalize(currScreen - prevScreen);\n  }\n  // somewhere in middle, needs a join\n  else {\n    // get directions from (C - B) and (B - A)\n    vec2 dirA = normalize((currScreen - prevScreen));\n    if (int(miterLimit_0) == -1) {\n      dir = dirA;\n    } else {\n      vec2 dirB = normalize((nextScreen - currScreen));\n      // now compute the miter join normal and length\n      vec2 tangent = normalize(dirA + dirB);\n      vec2 perp = vec2(-dirA.y, dirA.x);\n      vec2 miter = vec2(-tangent.y, tangent.x);\n      dir = tangent;\n      len /= dot(miter, perp);\n    }\n  }\n\n  return vec2(-dir.y, dir.x) *\n    clamp(len, 0.0, miterLimit_0) / aspectVec;\n}\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\nuniform float aspect;\n\nuniform float thickness;\nuniform float miterLimit;\n\n// TODO: Enable compiling for 2 or 3 dimensional lines\nattribute vec2 prevPosition;\nattribute vec2 currPosition;\nattribute vec2 nextPosition;\n\nattribute float offset;\nattribute vec4 color;\nattribute vec2 ud;\n\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 0.0, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 0.0, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);\n\n  vec2 miterOffset = computeMiterOffset(\n    projViewModel,\n    aspect, thickness, miterLimit,\n    prevProjected, currProjected, nextProjected);\n\n  vColor = color;\n  vUD = ud;\n\n  gl_Position = currProjected + vec4(miterOffset * offset, 0.0, 1.0);\n}\n";
 
 var line = {
   frag: frag,
@@ -70,6 +70,15 @@ var CONTEXT_ACCESSORS = [
 ];
 
 var scratchVec2 = glMatrix.vec2.create();
+
+function LinePath () {
+  this.offset = 0;
+  this.count = 0;
+  this.totalLength = 0;
+  this.isClosed = false;
+}
+
+inherit(null, LinePath, {});
 
 function LineBuilder (regl, opts) {
   this.context = this.createContext(regl);
@@ -113,8 +122,8 @@ inherit(null, LineBuilder, {
       transform: transform,
       activePath: null,
       prevPosition: glMatrix.vec2.create(),
-      paths: [],
-      saveStack: []
+      saveStack: [],
+      scratchPath: LinePath.create()
     }
   },
 
@@ -237,14 +246,8 @@ inherit(null, LineBuilder, {
         return params.viewportWidth / params.viewportHeight
       },
 
-      thickness: function (params, context) {
-        return context.thickness /
-          (200 * params.viewportHeight / params.viewportWidth)
-      },
-      miterLimit: function (params, context) {
-        return context.miterLimit /
-          (200 * params.viewportHeight / params.viewportWidth)
-      },
+      thickness: regl.prop('thickness'),
+      miterLimit: regl.prop('miterLimit'),
       model: regl.prop('model'),
       tint: regl.prop('tint')
     };
@@ -291,13 +294,12 @@ inherit(null, LineBuilder, {
     var color = resources.color;
     var ud = resources.ud;
     var elements = resources.elements;
-    var byteOffset = 0;
 
-    position.buffer.subdata(position.view, byteOffset);
-    offset.buffer.subdata(offset.view, byteOffset);
-    color.buffer.subdata(color.view, byteOffset);
-    ud.buffer.subdata(ud.view, byteOffset);
-    elements.buffer.subdata(elements.view, byteOffset);
+    position.buffer.subdata(position.view);
+    offset.buffer.subdata(offset.view);
+    color.buffer.subdata(color.view);
+    ud.buffer.subdata(ud.view);
+    elements.buffer.subdata(elements.view);
   },
 
   getContext: function () {
@@ -359,7 +361,16 @@ inherit(null, LineBuilder, {
     glMatrix.mat2d.identity(transform.matrix);
 
     state.activePath = null;
-    state.paths.length = 0;
+    state.saveStack.length = 0;
+  },
+
+  destroy: function () {
+    var resources = this.resources;
+    resources.position.buffer.destroy();
+    resources.offset.buffer.destroy();
+    resources.color.buffer.destroy();
+    resources.ud.buffer.destroy();
+    resources.elements.buffer.destroy();
   },
 
   save: function () {
@@ -399,15 +410,13 @@ inherit(null, LineBuilder, {
     var offset = !activePath ? 0
       : activePath.offset + activePath.count;
 
-    var nextPath = {
-      offset: offset,
-      count: 0,
-      totalLength: 0,
-      isClosed: false
-    };
+    var nextPath = state.scratchPath;
+    nextPath.offset = offset;
+    nextPath.count = 0;
+    nextPath.totalLength = 0;
+    nextPath.isClosed = false;
 
     state.activePath = nextPath;
-    state.paths.push(nextPath);
   },
 
   moveTo: function (x, y) {
@@ -739,7 +748,6 @@ inherit(null, LineBuilder, {
     var activePath = this.state.activePath;
     var transform = this.state.transform;
     var pos = glMatrix.vec2.set(scratchVec2, x, y);
-
     if (!transform.isIdentity && !activePath.isClosed) {
       glMatrix.vec2.transformMat2d(pos, pos, transform.matrix);
     }
