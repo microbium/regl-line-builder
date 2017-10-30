@@ -204,15 +204,9 @@ inherit(null, LineBuilder, {
       aspect: function (params, context) {
         return params.viewportWidth / params.viewportHeight
       },
-      // FIXME: Still not correct ...
-      thickness: function (params, context) {
-        return context.thickness /
-          (200 * params.viewportHeight / params.viewportWidth)
-      },
-      miterLimit: function (params, context) {
-        return context.miterLimit /
-          (200 * params.viewportHeight / params.viewportWidth)
-      },
+      // FIXME: Need to somehow correct for projection
+      thickness: regl.prop('thickness'),
+      miterLimit: regl.prop('miterLimit'),
       model: regl.prop('model'),
       tint: regl.prop('tint')
     }
