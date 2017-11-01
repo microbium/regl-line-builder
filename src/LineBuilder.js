@@ -27,6 +27,7 @@ var CONTEXT_ACCESSORS = [
   'lineWidth',
   'strokeStyle'
 ]
+var MAX_UINT16_INT = 65536
 
 var scratchVec2 = vec2.create()
 
@@ -113,7 +114,6 @@ inherit(null, LineBuilder, {
     })
     var elementsBuffer = regl.elements({
       usage: 'dynamic',
-      type: 'uint16',
       primitive: 'triangles',
       data: views.elements
     })
@@ -143,13 +143,26 @@ inherit(null, LineBuilder, {
   },
 
   createResourceViews: function (size, stride) {
+    var ElementsArrayCtor = this.getElementsCtor(size)
     return {
       position: new Float32Array(size * stride * 2),
       offset: new Float32Array(size * 2),
       color: new Float32Array(size * 4 * 2),
       ud: new Float32Array(size * 2 * 3),
-      elements: new Uint16Array(size * 4)
+      elements: new ElementsArrayCtor(size * 4)
     }
+  },
+
+  getElementsCtor (size) {
+    var isBig = size * 4 * 2 > MAX_UINT16_INT
+    var hasElementIndexExt = this.context.regl.hasExtension('OES_element_index_uint')
+    if (isBig && !hasElementIndexExt) {
+      throw new Error(
+        'bufferSize is too big for Uint16Array, ' +
+        'please enable OES_element_index_uint extension.')
+    }
+    return isBig && hasElementIndexExt
+      ? Uint32Array : Uint16Array
   },
 
   createAttributes: function () {

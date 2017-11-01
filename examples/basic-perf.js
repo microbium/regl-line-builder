@@ -3,7 +3,9 @@ import { mat4 } from 'gl-matrix'
 import Stats from '@jpweeks/rstats'
 import { LineBuilder } from '../index'
 
-const regl = createREGL()
+const regl = createREGL({
+  extensions: ['OES_element_index_uint']
+})
 const setupCamera = regl({
   uniforms: {
     view: mat4.identity([]),
@@ -18,7 +20,7 @@ const stats = new Stats()
 
 const lines = LineBuilder.create(regl, {
   stride: 2,
-  bufferSize: Math.pow(2, 16)
+  bufferSize: 2 ** 16
 })
 const ctx = lines.getContext()
 
@@ -29,15 +31,20 @@ function update ({ viewportWidth, viewportHeight }) {
 
   lines.reset()
 
-  for (let i = 0; i < 1400; i++) {
-    let lineWidth = random() * 2 + 0.5
+  for (let i = 0; i < 10000; i++) {
+    let lineWidth = random() * 2 + 0.15
     let x = (random() * 2 - 1) * vw
     let y = (random() * 2 - 1) * vh
     let r = random() * 50 + 20
+    let rot = random() * Math.PI * 2
 
     ctx.lineWidth = lineWidth
     ctx.beginPath()
-    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.rotate(rot)
+    ctx.moveTo(x, y)
+    ctx.lineTo(x + r, y + r)
+    ctx.lineTo(x - r, y + r)
+    ctx.closePath()
     ctx.stroke()
   }
 }
@@ -63,6 +70,7 @@ function draw ({ tick }) {
 
 regl.frame((params) => {
   stats('fps').frame()
+  stats('quads').set(lines.state.cursor.quad)
   stats('update').start()
   update(params)
   stats('update').end()

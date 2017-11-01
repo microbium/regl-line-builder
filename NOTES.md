@@ -3,6 +3,7 @@
 - [ ] Add docs for API and supported Canvas2D features.
 - [ ] Add overloaded context methods for 3D space (adding `z` parameter to `moveTo`, `lineTo`, `translate` ...).
 - [ ] Add example for 3D space and perspective projection.
+- [x] Use Uint32Array for elements if buffer size exceeds 16 bit limit and extension is enabled.
 - [x] Add method to destroy/release all resource buffers.
 - [x] Fix viewport relative `thickness`.
 - [x] Allow custom vertex and fragment shader input (as well as other draw command parameters).
