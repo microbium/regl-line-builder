@@ -3,7 +3,7 @@ import { mat4 } from 'gl-matrix'
 import Stats from '@jpweeks/rstats'
 import { LineBuilder } from '../index'
 
-const COUNT = 12000
+const COUNT = 33000
 
 const regl = createREGL({
   extensions: ['OES_element_index_uint']
@@ -32,14 +32,17 @@ function update ({ viewportWidth, viewportHeight }) {
   const vh = viewportHeight - 20
 
   lines.reset()
+  ctx.strokeStyle = '#ffffff'
 
   for (let i = 0; i < COUNT; i++) {
     let lineWidth = random() * 2 + 0.15
+    let globalAlpha = random() * 0.9 + 0.1
     let x = (random() * 2 - 1) * vw
     let y = (random() * 2 - 1) * vh
     let r = random() * 50 + 20
     let rot = random() * Math.PI * 2
 
+    ctx.globalAlpha = globalAlpha
     ctx.lineWidth = lineWidth
     ctx.beginPath()
     ctx.rotate(rot)
@@ -51,6 +54,7 @@ function update ({ viewportWidth, viewportHeight }) {
   }
 }
 
+const model = mat4.create()
 function draw ({ tick }) {
   const { sin } = Math
   const t0 = sin(tick * 0.1) * 0.5 + 0.5
@@ -62,19 +66,24 @@ function draw ({ tick }) {
     })
 
     lines.draw({
-      model: mat4.identity([]),
-      tint: [1, 1, 1, 1],
-      thickness: 1 + t0 * 0.5,
+      model,
+      tint: [t0 * 0.5, t0 * 0.3, t0 * 0.6, 1],
+      thickness: 1 + t0 * 2,
       miterLimit: 12
     })
   })
 }
 
+let shouldUpdate = true
+document.body.addEventListener('click', () => {
+  shouldUpdate = !shouldUpdate
+})
+
 regl.frame((params) => {
   stats('fps').frame()
   stats('quads').set(lines.state.cursor.quad)
   stats('update').start()
-  update(params)
+  if (shouldUpdate) update(params)
   stats('update').end()
   stats('draw').start()
   draw(params)
