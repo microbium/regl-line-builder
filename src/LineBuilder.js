@@ -237,6 +237,10 @@ inherit(null, LineBuilder, {
       elements: resources.elements.buffer,
       count: count,
       depth: { enable: false },
+      cull: {
+        enable: true,
+        face: 'back'
+      },
       blend: {
         enable: true,
         equation: 'add',
