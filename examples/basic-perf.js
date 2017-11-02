@@ -3,6 +3,8 @@ import { mat4 } from 'gl-matrix'
 import Stats from '@jpweeks/rstats'
 import { LineBuilder } from '../index'
 
+const COUNT = 12000
+
 const regl = createREGL({
   extensions: ['OES_element_index_uint']
 })
@@ -20,7 +22,7 @@ const stats = new Stats()
 
 const lines = LineBuilder.create(regl, {
   stride: 2,
-  bufferSize: 2 ** 16
+  bufferSize: COUNT * 6
 })
 const ctx = lines.getContext()
 
@@ -31,7 +33,7 @@ function update ({ viewportWidth, viewportHeight }) {
 
   lines.reset()
 
-  for (let i = 0; i < 10000; i++) {
+  for (let i = 0; i < COUNT; i++) {
     let lineWidth = random() * 2 + 0.15
     let x = (random() * 2 - 1) * vw
     let y = (random() * 2 - 1) * vh
