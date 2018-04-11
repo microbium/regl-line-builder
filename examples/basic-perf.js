@@ -21,7 +21,6 @@ const setupCamera = regl({
 const stats = new Stats()
 
 const lines = LineBuilder.create(regl, {
-  stride: 2,
   bufferSize: COUNT * 6
 })
 const ctx = lines.getContext()

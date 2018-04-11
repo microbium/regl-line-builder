@@ -40,7 +40,8 @@ function LinePath () {
 
 inherit(null, LinePath, {})
 
-export function LineBuilder (regl, opts) {
+export function LineBuilder (regl, opts_) {
+  var opts = opts_ || {}
   this.context = this.createContext(regl)
   this.state = this.createState(opts)
   this.resources = this.createResources()
@@ -60,7 +61,7 @@ inherit(null, LineBuilder, {
       vertex: 0,
       element: 0,
       quad: 0,
-      stride: opts.stride || 2,
+      dimensions: opts.dimensions || 2,
       max: opts.bufferSize || 1024
     }
     var sync = {
@@ -91,7 +92,7 @@ inherit(null, LineBuilder, {
     var regl = this.context.regl
     var cursor = this.state.cursor
 
-    var views = this.createResourceViews(cursor.max, cursor.stride)
+    var views = this.createResourceViews(cursor.max, cursor.dimensions)
     var positionBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
@@ -142,10 +143,10 @@ inherit(null, LineBuilder, {
     }
   },
 
-  createResourceViews: function (size, stride) {
+  createResourceViews: function (size, dimensions) {
     var ElementsArrayCtor = this.getElementsCtor(size)
     return {
-      position: new Float32Array(size * stride * 2),
+      position: new Float32Array(size * dimensions * 2),
       offset: new Float32Array(size * 2),
       color: new Float32Array(size * 4 * 2),
       ud: new Float32Array(size * 2 * 3),
@@ -167,7 +168,7 @@ inherit(null, LineBuilder, {
 
   createAttributes: function () {
     var resources = this.resources
-    var stride = this.state.cursor.stride
+    var dimensions = this.state.cursor.dimensions
     var position = resources.position
     var color = resources.color
     var ud = resources.ud
@@ -177,17 +178,17 @@ inherit(null, LineBuilder, {
       prevPosition: {
         buffer: position.buffer,
         offset: 0,
-        stride: FLOAT_BYTES * stride
+        stride: FLOAT_BYTES * dimensions
       },
       currPosition: {
         buffer: position.buffer,
-        offset: FLOAT_BYTES * stride * 2,
-        stride: FLOAT_BYTES * stride
+        offset: FLOAT_BYTES * dimensions * 2,
+        stride: FLOAT_BYTES * dimensions
       },
       nextPosition: {
         buffer: position.buffer,
-        offset: FLOAT_BYTES * stride * 4,
-        stride: FLOAT_BYTES * stride
+        offset: FLOAT_BYTES * dimensions * 4,
+        stride: FLOAT_BYTES * dimensions
       },
       offset: offset.buffer,
       ud: ud.buffer,
@@ -299,7 +300,7 @@ inherit(null, LineBuilder, {
   resize: function (size) {
     var cursor = this.state.cursor
     var resources = this.resources
-    var nextViews = this.createResourceViews(size, cursor.stride)
+    var nextViews = this.createResourceViews(size, cursor.dimensions)
 
     cursor.max = size
     resources.position.view = nextViews.position
@@ -416,7 +417,7 @@ inherit(null, LineBuilder, {
     var prevPosition = state.prevPosition
 
     var cursor = state.cursor
-    var stride = cursor.stride
+    var dimensions = cursor.dimensions
     var color = state.style.color
     var lineWidth = state.style.lineWidth * 0.5
 
@@ -428,14 +429,14 @@ inherit(null, LineBuilder, {
 
     var pos = this.transformInput(x, y)
 
-    var aix = cursor.vertex * stride * 2
+    var aix = cursor.vertex * dimensions * 2
     var aiy = aix + 1
-    var bix = (cursor.vertex + 1) * stride * 2
+    var bix = (cursor.vertex + 1) * dimensions * 2
     var biy = bix + 1
-    positionView[aix] = positionView[aix + stride] = pos[0]
-    positionView[aiy] = positionView[aiy + stride] = pos[1]
-    positionView[bix] = positionView[bix + stride] = pos[0]
-    positionView[biy] = positionView[biy + stride] = pos[1]
+    positionView[aix] = positionView[aix + dimensions] = pos[0]
+    positionView[aiy] = positionView[aiy + dimensions] = pos[1]
+    positionView[bix] = positionView[bix + dimensions] = pos[0]
+    positionView[biy] = positionView[biy + dimensions] = pos[1]
 
     var ais = cursor.vertex * 2
     var bis = (cursor.vertex + 1) * 2
@@ -483,7 +484,7 @@ inherit(null, LineBuilder, {
     var prevPosition = state.prevPosition
 
     var cursor = state.cursor
-    var stride = cursor.stride
+    var dimensions = cursor.dimensions
     var color = state.style.color
     var lineWidth = state.style.lineWidth * 0.5
 
@@ -498,10 +499,10 @@ inherit(null, LineBuilder, {
     var segmentLength = vec2.distance(prevPosition, pos)
     var totalLength = activePath.totalLength += segmentLength
 
-    var aix = cursor.vertex * stride * 2
+    var aix = cursor.vertex * dimensions * 2
     var aiy = aix + 1
-    positionView[aix] = positionView[aix + stride] = pos[0]
-    positionView[aiy] = positionView[aiy + stride] = pos[1]
+    positionView[aix] = positionView[aix + dimensions] = pos[0]
+    positionView[aiy] = positionView[aiy + dimensions] = pos[1]
 
     // FIXME: Implement correct intermediate lineWidth changes
     var ais = cursor.vertex * 2
@@ -563,13 +564,13 @@ inherit(null, LineBuilder, {
     var state = this.state
     var activePath = state.activePath
     var cursor = state.cursor
-    var stride = cursor.stride
+    var dimensions = cursor.dimensions
 
     var resources = this.resources
     var positionView = resources.position.view
 
     var bi = cursor.vertex - activePath.count
-    var bix = bi * stride * 2
+    var bix = bi * dimensions * 2
     var biy = bix + 1
 
     var x = positionView[bix]
@@ -582,25 +583,25 @@ inherit(null, LineBuilder, {
   copyPosition: function (ai, bi) {
     var state = this.state
     var cursor = state.cursor
-    var stride = cursor.stride
+    var dimensions = cursor.dimensions
 
     var resources = this.resources
     var positionView = resources.position.view
 
-    var aix = ai * stride * 2
+    var aix = ai * dimensions * 2
     var aiy = aix + 1
-    var bix = bi * stride * 2
+    var bix = bi * dimensions * 2
     var biy = bix + 1
 
-    positionView[aix] = positionView[aix + stride] = positionView[bix]
-    positionView[aiy] = positionView[aiy + stride] = positionView[biy]
+    positionView[aix] = positionView[aix + dimensions] = positionView[bix]
+    positionView[aiy] = positionView[aiy + dimensions] = positionView[biy]
   },
 
   stroke: function () {
     var state = this.state
     var activePath = state.activePath
     var cursor = state.cursor
-    var stride = cursor.stride
+    var dimensions = cursor.dimensions
 
     var resources = this.resources
     var positionView = resources.position.view
@@ -612,12 +613,12 @@ inherit(null, LineBuilder, {
     var bi = cursor.vertex - 1
     var ai = cursor.vertex
 
-    var bix = bi * stride * 2
+    var bix = bi * dimensions * 2
     var biy = bix + 1
-    var aix = ai * stride * 2
+    var aix = ai * dimensions * 2
     var aiy = aix + 1
-    positionView[aix] = positionView[aix + stride] = positionView[bix]
-    positionView[aiy] = positionView[aiy + stride] = positionView[biy]
+    positionView[aix] = positionView[aix + dimensions] = positionView[bix]
+    positionView[aiy] = positionView[aiy + dimensions] = positionView[biy]
 
     var bis = bi * 2
     var ais = ai * 2

@@ -82,7 +82,7 @@ test('builder - create resources', function (t) {
   var regl = createREGL(gl)
 
   var lines = LineBuilder.create(regl, {
-    stride: 2,
+    dimensions: 2,
     bufferSize: 1024
   })
 
@@ -111,7 +111,7 @@ test('builder - resize resources', function (t) {
   var regl = createREGL(gl)
 
   var lines = LineBuilder.create(regl, {
-    stride: 2,
+    dimensions: 2,
     bufferSize: 1024
   })
 
@@ -155,7 +155,7 @@ test('builder - create paths', function (t) {
   var regl = createREGL(gl)
 
   var lines = LineBuilder.create(regl, {
-    stride: 2,
+    dimensions: 2,
     bufferSize: 1024
   })
   var ctx = lines.getContext()
@@ -240,7 +240,7 @@ test('builder - close paths', function (t) {
   var regl = createREGL(gl)
 
   var lines = LineBuilder.create(regl, {
-    stride: 2,
+    dimensions: 2,
     bufferSize: 1024
   })
   var ctx = lines.getContext()
@@ -292,7 +292,7 @@ test('builder - set line width', function (t) {
   var regl = createREGL(gl)
 
   var lines = LineBuilder.create(regl, {
-    stride: 2,
+    dimensions: 2,
     bufferSize: 1024
   })
   var ctx = lines.getContext()
@@ -323,7 +323,7 @@ test('builder - set stroke style', function (t) {
   var regl = createREGL(gl)
 
   var lines = LineBuilder.create(regl, {
-    stride: 2,
+    dimensions: 2,
     bufferSize: 1024
   })
   var ctx = lines.getContext()
@@ -356,7 +356,7 @@ test('builder - reset state', function (t) {
   var regl = createREGL(gl)
 
   var lines = LineBuilder.create(regl, {
-    stride: 2,
+    dimensions: 2,
     bufferSize: 1024
   })
   var ctx = lines.getContext()
@@ -447,7 +447,7 @@ test('builder - save and restore state', function (t) {
   var regl = createREGL(gl)
 
   var lines = LineBuilder.create(regl, {
-    stride: 2,
+    dimensions: 2,
     bufferSize: 1024
   })
   var ctx = lines.getContext()

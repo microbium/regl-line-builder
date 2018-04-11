@@ -32,7 +32,6 @@ void main() {
 }
 `
 const lines = LineBuilder.create(regl, {
-  stride: 2,
   bufferSize: 300,
   drawArgs: {
     frag
