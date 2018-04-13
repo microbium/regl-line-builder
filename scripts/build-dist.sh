@@ -11,5 +11,5 @@ cleanup_lines () {
 rm -rf dist
 mkdir dist
 rollup $* --config rollup.config.js index.js
-cleanup_lines ./dist/index.js
-cleanup_lines ./dist/index.module.js
+cleanup_lines ./dist/regl-line-builder.js
+cleanup_lines ./dist/regl-line-builder.module.js

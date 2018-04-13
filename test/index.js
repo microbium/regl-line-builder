@@ -1,7 +1,7 @@
 var test = require('tape')
 var createREGL = require('regl')
 var { createContext } = require('./utils/create-context')
-var { LineBuilder, line } = require('../dist/index')
+var { LineBuilder, line } = require('../dist/regl-line-builder')
 
 var slice = Array.prototype.slice
 

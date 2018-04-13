@@ -100,6 +100,6 @@ npm install regl-line-builder --save
 [travis-image]: https://img.shields.io/travis/jpweeks/regl-line-builder/master.svg?style=flat-square
 [style-url]: https://standardjs.com
 [style-image]: https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square
-[size-image]: https://badge-size.herokuapp.com/jpweeks/regl-line-builder/master/dist/index.min.js.svg?compression=gzip&style=flat-square
+[size-image]: https://badge-size.herokuapp.com/jpweeks/regl-line-builder/master/dist/regl-line-builder.min.js.svg?compression=gzip&style=flat-square
 [pretty-face-url]: http://requirebin.com/?gist=aa0328bbb030e868863fc57e3b17f8e2
 [pretty-face-image]: ./assets/images/pretty-face.png

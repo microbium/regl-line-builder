@@ -25,11 +25,11 @@ var configs = {
       {
         format: 'umd',
         name: 'REGLLineBuilder',
-        file: 'dist/index.js'
+        file: 'dist/regl-line-builder.js'
       },
       {
         format: 'es',
-        file: 'dist/index.module.js'
+        file: 'dist/regl-line-builder.module.js'
       }
     ]
   }
