@@ -12,5 +12,7 @@ addons:
     - libosmesa6
 node_js:
   - '7'
+before_install:
+  - npm install gl-matrix
 before_script:
   - export DISPLAY=:99.0; sh -e /etc/init.d/xvfb start
