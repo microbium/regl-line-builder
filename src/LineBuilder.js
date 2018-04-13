@@ -224,7 +224,7 @@ inherit(null, LineBuilder, {
       thickness: regl.prop('thickness'),
       miterLimit: regl.prop('miterLimit'),
       adjustProjectedThickness: function (params, context) {
-        return context.adjustProjectedThickness === false ? 0 : 1
+        return context.adjustProjectedThickness === true ? 1 : 0
       },
       model: regl.prop('model'),
       tint: regl.prop('tint')

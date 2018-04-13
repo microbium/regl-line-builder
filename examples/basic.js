@@ -96,7 +96,8 @@ regl.frame(({ tick }) => {
       model: mat4.identity([]),
       tint: [0.8 * t0, 0, 0.5 * t1, 1],
       thickness: 1 + t0 * 0.5,
-      miterLimit: 12
+      miterLimit: 12,
+      adjustProjectedThickness: true
     })
   })
   stats('frame').end()

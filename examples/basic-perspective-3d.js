@@ -28,11 +28,14 @@ function update ({ tick }) {
   const curve = polarCurve([], 120,
     (t) => Math.sin(2.5 * t) * 400)
 
+  lines.reset()
+
   ctx.save()
   ctx.globalAlpha = 1
   ctx.strokeStyle = '#222222'
   ctx.rotate(tick * 0.01, 'z')
   ctx.beginPath()
+
   curve.forEach((point, i) => {
     const t = i / (curve.length - 1)
     const x = point[0]
@@ -91,8 +94,9 @@ regl.frame(({ tick }) => {
   stats('frame').start()
   stats('fps').frame()
 
-  lines.reset()
+  stats('update').start()
   update({ tick })
+  stats('update').end()
 
   setupCamera(() => {
     regl.clear({

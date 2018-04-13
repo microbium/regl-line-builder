@@ -68,7 +68,8 @@ function draw ({ tick }) {
       model,
       tint: [t0 * 0.5, t0 * 0.3, t0 * 0.6, 1],
       thickness: 1 + t0 * 2,
-      miterLimit: 12
+      miterLimit: 12,
+      adjustProjectedThickness: true
     })
   })
 }
