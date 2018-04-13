@@ -12,6 +12,10 @@ function setRGB (out, color) {
   out[2] = (hex & 255) / 255;
 }
 
+function clamp (x, min, max) {
+  return Math.max(Math.min(x, max), min)
+}
+
 function ctor (Ctor) {
   return function () {
     var instance = Object.create(Ctor.prototype);
@@ -27,18 +31,9 @@ function inherit (ParentCtor, Ctor, proto) {
   Object.assign(Ctor.prototype, proto);
 }
 
-function warnOnce (message) {
-  var didWarn = false;
-  return function () {
-    if (didWarn) return
-    didWarn = true;
-    console.warn(message);
-  }
-}
-
 var frag = "precision highp float;\n#define GLSLIFY 1\nuniform vec4 tint;\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  gl_FragColor = vColor * tint;\n}\n";
 
-var vert = "precision highp float;\n#define GLSLIFY 1\n\n// Based on WebGL lines demo\n// (c) 2015 Matt DesLauriers. MIT License\n// https://github.com/mattdesl/webgl-lines/\n\n// TODO: Maybe make separate package to make reuse with custom shaders easier?\n// TODO: Maybe use struct to pass some of this data?\nvec2 computeMiterOffset (\n  mat4 projection_0,\n  int adjustProjectedThickness_0,\n  float aspect_0,\n  float thickness_0,\n  float miterLimit_0,\n  vec4 prevProjected_0,\n  vec4 currProjected_0,\n  vec4 nextProjected_0\n) {\n  vec2 aspectVec = vec2(aspect_0, 1.0);\n\n  // get 2D screen space with W divide and aspect correction\n  vec2 prevScreen = prevProjected_0.xy / prevProjected_0.w * aspectVec;\n  vec2 currScreen = currProjected_0.xy / currProjected_0.w * aspectVec;\n  vec2 nextScreen = nextProjected_0.xy / nextProjected_0.w * aspectVec;\n\n  float thicknessScale = 1.0;\n  if (adjustProjectedThickness_0 == 1) {\n    vec4 singlePixelProjected = projection_0 * vec4(2.0, 0.0, 0.0, 1.0);\n    vec2 singlePixel = singlePixelProjected.xy / singlePixelProjected.w * aspectVec;\n    thicknessScale = singlePixel.x;\n  }\n\n  vec2 dir = vec2(0.0);\n  float len = thickness_0 * thicknessScale;\n\n  // starting point uses (next - current)\n  if (currScreen == prevScreen) {\n    dir = normalize(nextScreen - currScreen);\n  }\n  // ending point uses (current - previous)\n  else if (currScreen == nextScreen) {\n    dir = normalize(currScreen - prevScreen);\n  }\n  // somewhere in middle, needs a join\n  else {\n    // get directions from (C - B) and (B - A)\n    vec2 dirA = normalize((currScreen - prevScreen));\n    if (int(miterLimit_0) == -1) {\n      dir = dirA;\n    } else {\n      vec2 dirB = normalize((nextScreen - currScreen));\n      // now compute the miter join normal and length\n      vec2 tangent = normalize(dirA + dirB);\n      vec2 perp = vec2(-dirA.y, dirA.x);\n      vec2 miter = vec2(-tangent.y, tangent.x);\n      dir = tangent;\n      len /= dot(miter, perp);\n    }\n  }\n\n  return vec2(-dir.y, dir.x) *\n    clamp(len, 0.0, miterLimit_0 * thicknessScale) / aspectVec;\n}\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\nuniform float aspect;\nuniform int adjustProjectedThickness;\n\nuniform float thickness;\nuniform float miterLimit;\n\n// TODO: Enable compiling for 2 or 3 dimensional lines\nattribute vec2 prevPosition;\nattribute vec2 currPosition;\nattribute vec2 nextPosition;\n\nattribute float offset;\nattribute vec4 color;\nattribute vec2 ud;\n\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 0.0, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 0.0, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);\n\n  vec2 miterOffset = computeMiterOffset(\n    projection, adjustProjectedThickness,\n    aspect, thickness, miterLimit,\n    prevProjected, currProjected, nextProjected);\n\n  vColor = color;\n  vUD = ud;\n\n  gl_Position = currProjected + vec4(miterOffset * offset, 0.0, 1.0);\n}\n";
+var vert = "precision highp float;\n#define GLSLIFY 1\n\n// Based on WebGL lines demo\n// (c) 2015 Matt DesLauriers. MIT License\n// https://github.com/mattdesl/webgl-lines/\n\n// TODO: Maybe make separate package to make reuse with custom shaders easier?\n// TODO: Maybe use struct to pass some of this data?\nvec2 computeMiterOffset (\n  mat4 projection_0,\n  int adjustProjectedThickness_0,\n  float aspect_0,\n  float thickness_0,\n  float miterLimit_0,\n  vec4 prevProjected_0,\n  vec4 currProjected_0,\n  vec4 nextProjected_0\n) {\n  vec2 aspectVec = vec2(aspect_0, 1.0);\n\n  // get 2D screen space with W divide and aspect correction\n  vec2 prevScreen = prevProjected_0.xy / prevProjected_0.w * aspectVec;\n  vec2 currScreen = currProjected_0.xy / currProjected_0.w * aspectVec;\n  vec2 nextScreen = nextProjected_0.xy / nextProjected_0.w * aspectVec;\n\n  float thicknessScale = 1.0;\n  if (adjustProjectedThickness_0 == 1) {\n    vec4 singlePixelProjected = projection_0 * vec4(2.0, 0.0, 0.0, 1.0);\n    vec2 singlePixel = singlePixelProjected.xy / singlePixelProjected.w * aspectVec;\n    thicknessScale = singlePixel.x;\n  }\n\n  vec2 dir = vec2(0.0);\n  float len = thickness_0 * thicknessScale;\n\n  // starting point uses (next - current)\n  if (currScreen == prevScreen) {\n    dir = normalize(nextScreen - currScreen);\n  }\n  // ending point uses (current - previous)\n  else if (currScreen == nextScreen) {\n    dir = normalize(currScreen - prevScreen);\n  }\n  // somewhere in middle, needs a join\n  else {\n    // get directions from (C - B) and (B - A)\n    vec2 dirA = normalize((currScreen - prevScreen));\n    if (int(miterLimit_0) == -1) {\n      dir = dirA;\n    } else {\n      vec2 dirB = normalize((nextScreen - currScreen));\n      // now compute the miter join normal and length\n      vec2 tangent = normalize(dirA + dirB);\n      vec2 perp = vec2(-dirA.y, dirA.x);\n      vec2 miter = vec2(-tangent.y, tangent.x);\n      dir = tangent;\n      len /= dot(miter, perp);\n    }\n  }\n\n  return vec2(-dir.y, dir.x) *\n    clamp(len, 0.0, miterLimit_0 * thicknessScale) / aspectVec;\n}\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\nuniform float aspect;\nuniform int adjustProjectedThickness;\n\nuniform float thickness;\nuniform float miterLimit;\n\n#ifdef DIMENSIONS_3\nattribute vec3 prevPosition;\nattribute vec3 currPosition;\nattribute vec3 nextPosition;\n#else\nattribute vec2 prevPosition;\nattribute vec2 currPosition;\nattribute vec2 nextPosition;\n#endif\n\nattribute float offset;\nattribute vec4 color;\nattribute vec2 ud;\n\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n\n#ifdef DIMENSIONS_3\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 1.0);\n#else\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 0.0, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 0.0, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);\n#endif\n\n  vec2 miterOffset = computeMiterOffset(\n    projection, adjustProjectedThickness,\n    aspect, thickness, miterLimit,\n    prevProjected, currProjected, nextProjected);\n\n  vColor = color;\n  vUD = ud;\n\n  gl_Position = currProjected + vec4(miterOffset * offset, 0.0, 1.0);\n}\n";
 
 var line = {
   frag: frag,
@@ -54,7 +49,6 @@ var CONTEXT_METHODS = [
   'closePath',
   'stroke',
   'strokeRect',
-  'setLineDash',
   'setTransform',
   'translate',
   'scale',
@@ -64,13 +58,12 @@ var CONTEXT_METHODS = [
 ];
 var CONTEXT_ACCESSORS = [
   'globalAlpha',
-  'lineDashOffset',
   'lineWidth',
   'strokeStyle'
 ];
 var MAX_UINT16_INT = 65536;
 
-var scratchVec2 = glMatrix.vec2.create();
+var scratchVec = glMatrix.vec3.create();
 
 function LinePath () {
   this.offset = 0;
@@ -81,7 +74,11 @@ function LinePath () {
 
 inherit(null, LinePath, {});
 
-function LineBuilder (regl, opts) {
+function LineBuilder (regl, opts_) {
+  var opts = opts_ || {};
+  opts.dimensions = clamp(opts.dimensions || 2, 2, 3);
+  opts.bufferSize = opts.bufferSize || 1024;
+
   this.context = this.createContext(regl);
   this.state = this.createState(opts);
   this.resources = this.createResources();
@@ -97,12 +94,13 @@ inherit(null, LineBuilder, {
   },
 
   createState: function (opts) {
+    var is3d = opts.dimensions === 3;
     var cursor = {
       vertex: 0,
       element: 0,
       quad: 0,
-      stride: opts.stride || 2,
-      max: opts.bufferSize || 1024
+      dimensions: opts.dimensions,
+      max: opts.bufferSize
     };
     var sync = {
       vertex: 0
@@ -114,15 +112,16 @@ inherit(null, LineBuilder, {
     };
     var transform = {
       isIdentity: true,
-      matrix: glMatrix.mat2d.create()
+      matrix: glMatrix.mat4.create()
     };
     return {
+      is3d: is3d,
       cursor: cursor,
       sync: sync,
       style: style,
       transform: transform,
       activePath: null,
-      prevPosition: glMatrix.vec2.create(),
+      prevPosition: glMatrix.vec3.create(),
       saveStack: [],
       scratchPath: LinePath.create()
     }
@@ -132,7 +131,7 @@ inherit(null, LineBuilder, {
     var regl = this.context.regl;
     var cursor = this.state.cursor;
 
-    var views = this.createResourceViews(cursor.max, cursor.stride);
+    var views = this.createResourceViews(cursor.max, cursor.dimensions);
     var positionBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
@@ -183,10 +182,10 @@ inherit(null, LineBuilder, {
     }
   },
 
-  createResourceViews: function (size, stride) {
+  createResourceViews: function (size, dimensions) {
     var ElementsArrayCtor = this.getElementsCtor(size);
     return {
-      position: new Float32Array(size * stride * 2),
+      position: new Float32Array(size * dimensions * 2),
       offset: new Float32Array(size * 2),
       color: new Float32Array(size * 4 * 2),
       ud: new Float32Array(size * 2 * 3),
@@ -208,7 +207,7 @@ inherit(null, LineBuilder, {
 
   createAttributes: function () {
     var resources = this.resources;
-    var stride = this.state.cursor.stride;
+    var dimensions = this.state.cursor.dimensions;
     var position = resources.position;
     var color = resources.color;
     var ud = resources.ud;
@@ -218,17 +217,17 @@ inherit(null, LineBuilder, {
       prevPosition: {
         buffer: position.buffer,
         offset: 0,
-        stride: FLOAT_BYTES * stride
+        stride: FLOAT_BYTES * dimensions
       },
       currPosition: {
         buffer: position.buffer,
-        offset: FLOAT_BYTES * stride * 2,
-        stride: FLOAT_BYTES * stride
+        offset: FLOAT_BYTES * dimensions * 2,
+        stride: FLOAT_BYTES * dimensions
       },
       nextPosition: {
         buffer: position.buffer,
-        offset: FLOAT_BYTES * stride * 4,
-        stride: FLOAT_BYTES * stride
+        offset: FLOAT_BYTES * dimensions * 4,
+        stride: FLOAT_BYTES * dimensions
       },
       offset: offset.buffer,
       ud: ud.buffer,
@@ -261,7 +260,7 @@ inherit(null, LineBuilder, {
       thickness: regl.prop('thickness'),
       miterLimit: regl.prop('miterLimit'),
       adjustProjectedThickness: function (params, context) {
-        return context.adjustProjectedThickness === false ? 0 : 1
+        return context.adjustProjectedThickness === true ? 1 : 0
       },
       model: regl.prop('model'),
       tint: regl.prop('tint')
@@ -277,7 +276,9 @@ inherit(null, LineBuilder, {
       attributes: attributes,
       elements: resources.elements.buffer,
       count: count,
-      depth: { enable: false },
+      depth: {
+        enable: true
+      },
       cull: {
         enable: true,
         face: 'back'
@@ -294,6 +295,12 @@ inherit(null, LineBuilder, {
     var drawArgs = opts.drawArgs
       ? this.combineDrawArgs(defaultDrawArgs, opts.drawArgs)
       : defaultDrawArgs;
+
+    if (state.is3d) {
+      var define3d = '#define DIMENSIONS_3\n';
+      drawArgs.vert = define3d + drawArgs.vert;
+      drawArgs.frag = define3d + drawArgs.frag;
+    }
 
     var drawCommand = regl(drawArgs);
 
@@ -321,24 +328,32 @@ inherit(null, LineBuilder, {
     elements.buffer.subdata(elements.view);
   },
 
-  getContext: function () {
+  getContext: function (type_) {
     var that = this;
     var state = this.state;
-    var map = {};
+    var context = {};
+
+    var type = type_ || '2d';
+    var typeMethods = this['methods' + type];
+    var baseMethods = this;
+    var accessors = this.accessors;
+
     CONTEXT_METHODS.forEach(function (key) {
-      map[key] = that[key].bind(that);
+      var method = typeMethods[key] || baseMethods[key];
+      if (method) context[key] = method.bind(that);
     });
     CONTEXT_ACCESSORS.forEach(function (key) {
-      var accessor = that[key];
-      Object.defineProperty(map, key, accessor(state));
+      var accessor = accessors[key];
+      Object.defineProperty(context, key, accessor(state));
     });
-    return map
+
+    return context
   },
 
   resize: function (size) {
     var cursor = this.state.cursor;
     var resources = this.resources;
-    var nextViews = this.createResourceViews(size, cursor.stride);
+    var nextViews = this.createResourceViews(size, cursor.dimensions);
 
     cursor.max = size;
     resources.position.view = nextViews.position;
@@ -360,6 +375,7 @@ inherit(null, LineBuilder, {
 
   reset: function () {
     var state = this.state;
+    var is3d = state.is3d;
     var cursor = state.cursor;
     var sync = state.sync;
     var style = state.style;
@@ -377,7 +393,8 @@ inherit(null, LineBuilder, {
     style.color[3] = 1;
 
     transform.isIdentity = true;
-    glMatrix.mat2d.identity(transform.matrix);
+    if (is3d) glMatrix.mat4.identity(transform.matrix);
+    else glMatrix.mat2d.identity(transform.matrix);
 
     state.activePath = null;
     state.saveStack.length = 0;
@@ -394,6 +411,7 @@ inherit(null, LineBuilder, {
 
   save: function () {
     var state = this.state;
+    var is3d = state.is3d;
     var style = state.style;
     var transform = state.transform;
 
@@ -404,7 +422,9 @@ inherit(null, LineBuilder, {
       },
       transform: {
         isIdentity: transform.isIdentity,
-        matrix: glMatrix.mat2d.clone(transform.matrix)
+        matrix: is3d
+          ? glMatrix.mat4.clone(transform.matrix)
+          : glMatrix.mat2d.clone(transform.matrix)
       }
     });
   },
@@ -438,13 +458,16 @@ inherit(null, LineBuilder, {
     state.activePath = nextPath;
   },
 
-  moveTo: function (x, y) {
+  moveTo: function (x, y, z_) {
+    var z = z_ || 0;
+
     var state = this.state;
     var activePath = state.activePath;
     var prevPosition = state.prevPosition;
+    var is3d = state.is3d;
 
     var cursor = state.cursor;
-    var stride = cursor.stride;
+    var dimensions = cursor.dimensions;
     var color = state.style.color;
     var lineWidth = state.style.lineWidth * 0.5;
 
@@ -454,16 +477,22 @@ inherit(null, LineBuilder, {
     var udView = resources.ud.view;
     var colorView = resources.color.view;
 
-    var pos = this.transformInput(x, y);
+    var pos = this.transformInput(x, y, z);
 
-    var aix = cursor.vertex * stride * 2;
+    var aix = cursor.vertex * dimensions * 2;
     var aiy = aix + 1;
-    var bix = (cursor.vertex + 1) * stride * 2;
+    var bix = (cursor.vertex + 1) * dimensions * 2;
     var biy = bix + 1;
-    positionView[aix] = positionView[aix + stride] = pos[0];
-    positionView[aiy] = positionView[aiy + stride] = pos[1];
-    positionView[bix] = positionView[bix + stride] = pos[0];
-    positionView[biy] = positionView[biy + stride] = pos[1];
+    positionView[aix] = positionView[aix + dimensions] = pos[0];
+    positionView[aiy] = positionView[aiy + dimensions] = pos[1];
+    positionView[bix] = positionView[bix + dimensions] = pos[0];
+    positionView[biy] = positionView[biy + dimensions] = pos[1];
+    if (is3d) {
+      var aiz = aix + 2;
+      var biz = bix + 2;
+      positionView[aiz] = positionView[aiz + dimensions] = pos[2];
+      positionView[biz] = positionView[biz + dimensions] = pos[2];
+    }
 
     var ais = cursor.vertex * 2;
     var bis = (cursor.vertex + 1) * 2;
@@ -505,13 +534,16 @@ inherit(null, LineBuilder, {
     cursor.vertex += 2;
   },
 
-  lineTo: function (x, y) {
+  lineTo: function (x, y, z_) {
+    var z = z_ || 0;
+
     var state = this.state;
     var activePath = state.activePath;
     var prevPosition = state.prevPosition;
+    var is3d = state.is3d;
 
     var cursor = state.cursor;
-    var stride = cursor.stride;
+    var dimensions = cursor.dimensions;
     var color = state.style.color;
     var lineWidth = state.style.lineWidth * 0.5;
 
@@ -522,14 +554,18 @@ inherit(null, LineBuilder, {
     var udView = resources.ud.view;
     var elementsView = resources.elements.view;
 
-    var pos = this.transformInput(x, y);
+    var pos = this.transformInput(x, y, z);
     var segmentLength = glMatrix.vec2.distance(prevPosition, pos);
     var totalLength = activePath.totalLength += segmentLength;
 
-    var aix = cursor.vertex * stride * 2;
+    var aix = cursor.vertex * dimensions * 2;
     var aiy = aix + 1;
-    positionView[aix] = positionView[aix + stride] = pos[0];
-    positionView[aiy] = positionView[aiy + stride] = pos[1];
+    positionView[aix] = positionView[aix + dimensions] = pos[0];
+    positionView[aiy] = positionView[aiy + dimensions] = pos[1];
+    if (is3d) {
+      var aiz = aix + 2;
+      positionView[aiz] = positionView[aiz + dimensions] = pos[2];
+    }
 
     var ais = cursor.vertex * 2;
     offsetView[ais] = lineWidth;
@@ -589,44 +625,29 @@ inherit(null, LineBuilder, {
     var state = this.state;
     var activePath = state.activePath;
     var cursor = state.cursor;
-    var stride = cursor.stride;
+    var dimensions = cursor.dimensions;
+    var is3d = state.is3d;
 
     var resources = this.resources;
     var positionView = resources.position.view;
 
     var bi = cursor.vertex - activePath.count;
-    var bix = bi * stride * 2;
-    var biy = bix + 1;
+    var bix = bi * dimensions * 2;
 
     var x = positionView[bix];
-    var y = positionView[biy];
+    var y = positionView[bix + 1];
+    var z = is3d ? positionView[bix + 2] : 0;
 
     activePath.isClosed = true;
-    this.lineTo(x, y);
-  },
-
-  copyPosition: function (ai, bi) {
-    var state = this.state;
-    var cursor = state.cursor;
-    var stride = cursor.stride;
-
-    var resources = this.resources;
-    var positionView = resources.position.view;
-
-    var aix = ai * stride * 2;
-    var aiy = aix + 1;
-    var bix = bi * stride * 2;
-    var biy = bix + 1;
-
-    positionView[aix] = positionView[aix + stride] = positionView[bix];
-    positionView[aiy] = positionView[aiy + stride] = positionView[biy];
+    this.lineTo(x, y, z);
   },
 
   stroke: function () {
     var state = this.state;
     var activePath = state.activePath;
+    var is3d = state.is3d;
     var cursor = state.cursor;
-    var stride = cursor.stride;
+    var dimensions = cursor.dimensions;
 
     var resources = this.resources;
     var positionView = resources.position.view;
@@ -638,12 +659,17 @@ inherit(null, LineBuilder, {
     var bi = cursor.vertex - 1;
     var ai = cursor.vertex;
 
-    var bix = bi * stride * 2;
+    var bix = bi * dimensions * 2;
     var biy = bix + 1;
-    var aix = ai * stride * 2;
+    var aix = ai * dimensions * 2;
     var aiy = aix + 1;
-    positionView[aix] = positionView[aix + stride] = positionView[bix];
-    positionView[aiy] = positionView[aiy + stride] = positionView[biy];
+    positionView[aix] = positionView[aix + dimensions] = positionView[bix];
+    positionView[aiy] = positionView[aiy + dimensions] = positionView[biy];
+    if (is3d) {
+      var aiz = aix + 2;
+      var biz = bix + 2;
+      positionView[aiz] = positionView[aiz + dimensions] = positionView[biz];
+    }
 
     var bis = bi * 2;
     var ais = ai * 2;
@@ -690,87 +716,170 @@ inherit(null, LineBuilder, {
     this.stroke();
   },
 
-  lineWidth: function (state) {
-    return {
-      get: function () {
-        return state.style.lineWidth
-      },
-      set: function (lineWidth) {
-        state.style.lineWidth = lineWidth;
-        return lineWidth
+  methods2d: {
+    setTransform: function (a, b, c, d, dx, dy) {
+      var transform = this.state.transform;
+      glMatrix.mat2d.set(transform.matrix, a, b, c, d, dx, dy);
+      transform.isIdentity = false;
+    },
+
+    translate: function (x, y) {
+      var transform = this.state.transform;
+      var translation = glMatrix.vec2.set(scratchVec, x, y);
+      glMatrix.mat2d.translate(transform.matrix, transform.matrix, translation);
+      transform.isIdentity = false;
+    },
+
+    scale: function (x, y) {
+      var transform = this.state.transform;
+      var scale = glMatrix.vec2.set(scratchVec, x, y);
+      glMatrix.mat2d.scale(transform.matrix, transform.matrix, scale);
+      transform.isIdentity = false;
+    },
+
+    rotate: function (angle) {
+      var transform = this.state.transform;
+      glMatrix.mat2d.rotate(transform.matrix, transform.matrix, angle);
+      transform.isIdentity = false;
+    }
+  },
+
+  methods3d: {
+    setTransform: function (
+      m00, m01, m02, m03,
+      m10, m11, m12, m13,
+      m20, m21, m22, m23,
+      m30, m31, m32, m33
+    ) {
+      var transform = this.state.transform;
+      glMatrix.mat4.set(transform.matrix,
+        m00, m01, m02, m03,
+        m10, m11, m12, m13,
+        m20, m21, m22, m23,
+        m30, m31, m32, m33);
+      transform.isIdentity = false;
+    },
+
+    translate: function (x, y, z) {
+      var transform = this.state.transform;
+      var translation = glMatrix.vec3.set(scratchVec, x, y, z);
+      glMatrix.mat4.translate(transform.matrix, transform.matrix, translation);
+      transform.isIdentity = false;
+    },
+
+    scale: function (x, y, z) {
+      var transform = this.state.transform;
+      var scale = glMatrix.vec3.set(scratchVec, x, y, z);
+      glMatrix.mat4.scale(transform.matrix, transform.matrix, scale);
+      transform.isIdentity = false;
+    },
+
+    rotate: function (angle, axis) {
+      var transform = this.state.transform;
+      switch (axis) {
+        case 'x':
+          glMatrix.mat4.rotateX(transform.matrix, transform.matrix, angle);
+          break
+        case 'y':
+          glMatrix.mat4.rotateY(transform.matrix, transform.matrix, angle);
+          break
+        case 'z':
+          glMatrix.mat4.rotateZ(transform.matrix, transform.matrix, angle);
+          break
+        default:
+          glMatrix.mat4.rotate(transform.matrix, transform.matrix, angle, axis);
+          break
+      }
+      transform.isIdentity = false;
+    }
+  },
+
+  accessors: {
+    lineWidth: function (state) {
+      return {
+        get: function () {
+          return state.style.lineWidth
+        },
+        set: function (lineWidth) {
+          state.style.lineWidth = lineWidth;
+          return lineWidth
+        }
+      }
+    },
+
+    globalAlpha: function (state) {
+      return {
+        get: function () {
+          return state.style.color[3]
+        },
+        set: function (globalAlpha) {
+          state.style.color[3] = globalAlpha;
+          return globalAlpha
+        }
+      }
+    },
+
+    strokeStyle: function (state) {
+      return {
+        get: function () {
+          return state.style.strokeStyle
+        },
+        set: function (strokeStyle) {
+          var color = state.style.color;
+          setRGB(color, strokeStyle);
+          state.style.strokeStyle = strokeStyle;
+          return strokeStyle
+        }
       }
     }
   },
 
-  globalAlpha: function (state) {
-    return {
-      get: function () {
-        return state.style.color[3]
-      },
-      set: function (globalAlpha) {
-        state.style.color[3] = globalAlpha;
-        return globalAlpha
+  transformInput: function (x, y, z_) {
+    var z = z_ || 0;
+
+    var state = this.state;
+    var is3d = state.is3d;
+
+    var activePath = state.activePath;
+    var transform = state.transform;
+    var pos;
+
+    if (is3d) {
+      pos = glMatrix.vec3.set(scratchVec, x, y, z);
+      if (!transform.isIdentity && !activePath.isClosed) {
+        glMatrix.vec3.transformMat4(pos, pos, transform.matrix);
+      }
+    } else {
+      pos = glMatrix.vec2.set(scratchVec, x, y);
+      if (!transform.isIdentity && !activePath.isClosed) {
+        glMatrix.vec2.transformMat2d(pos, pos, transform.matrix);
       }
     }
-  },
 
-  strokeStyle: function (state) {
-    return {
-      get: function () {
-        return state.style.strokeStyle
-      },
-      set: function (strokeStyle) {
-        var color = state.style.color;
-        setRGB(color, strokeStyle);
-        state.style.strokeStyle = strokeStyle;
-        return strokeStyle
-      }
-    }
-  },
-
-  lineDashOffset: function () {
-    return {
-      get: warnOnce('lineDashOffset not implemented'),
-      set: warnOnce('lineDashOffset not implemented')
-    }
-  },
-
-  setLineDash: warnOnce('setLineDash not implemented'),
-
-  setTransform: function (a, b, c, d, dx, dy) {
-    var transform = this.state.transform;
-    glMatrix.mat2d.set(transform.matrix, a, b, c, d, dx, dy);
-    transform.isIdentity = false;
-  },
-
-  translate: function (x, y) {
-    var transform = this.state.transform;
-    var translation = glMatrix.vec2.set(scratchVec2, x, y);
-    glMatrix.mat2d.translate(transform.matrix, transform.matrix, translation);
-    transform.isIdentity = false;
-  },
-
-  scale: function (x, y) {
-    var transform = this.state.transform;
-    var scale = glMatrix.vec2.set(scratchVec2, x, y);
-    glMatrix.mat2d.scale(transform.matrix, transform.matrix, scale);
-    transform.isIdentity = false;
-  },
-
-  rotate: function (angle) {
-    var transform = this.state.transform;
-    glMatrix.mat2d.rotate(transform.matrix, transform.matrix, angle);
-    transform.isIdentity = false;
-  },
-
-  transformInput: function (x, y) {
-    var activePath = this.state.activePath;
-    var transform = this.state.transform;
-    var pos = glMatrix.vec2.set(scratchVec2, x, y);
-    if (!transform.isIdentity && !activePath.isClosed) {
-      glMatrix.vec2.transformMat2d(pos, pos, transform.matrix);
-    }
     return pos
+  },
+
+  copyPosition: function (ai, bi) {
+    var state = this.state;
+    var is3d = state.is3d;
+    var cursor = state.cursor;
+    var dimensions = cursor.dimensions;
+
+    var resources = this.resources;
+    var positionView = resources.position.view;
+
+    var aix = ai * dimensions * 2;
+    var aiy = aix + 1;
+    var bix = bi * dimensions * 2;
+    var biy = bix + 1;
+
+    positionView[aix] = positionView[aix + dimensions] = positionView[bix];
+    positionView[aiy] = positionView[aiy + dimensions] = positionView[biy];
+    if (is3d) {
+      var aiz = aix + 2;
+      var biz = bix + 2;
+      positionView[aiz] = positionView[aiz + dimensions] = positionView[biz];
+    }
   }
 });
 
