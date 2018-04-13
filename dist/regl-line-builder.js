@@ -1,7 +1,7 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('gl-matrix')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'gl-matrix'], factory) :
-	(factory((global.REGLLineBuilder = {}),global.glMatrix));
+	(factory((global.REGLLineBuilder = {}),{vec2:global.vec2,vec3:global.vec3,mat2d:global.mat2d,mat4:global.mat4}));
 }(this, (function (exports,glMatrix) { 'use strict';
 
 function setRGB (out, color) {
