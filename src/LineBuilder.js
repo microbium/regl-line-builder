@@ -76,7 +76,7 @@ inherit(null, LineBuilder, {
     }
     var transform = {
       isIdentity: true,
-      matrix: mat4.create()
+      matrix: is3d ? mat4.create() : mat2d.create()
     }
     return {
       is3d: is3d,
