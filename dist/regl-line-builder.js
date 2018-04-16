@@ -112,7 +112,7 @@ inherit(null, LineBuilder, {
     };
     var transform = {
       isIdentity: true,
-      matrix: glMatrix.mat4.create()
+      matrix: is3d ? glMatrix.mat4.create() : glMatrix.mat2d.create()
     };
     return {
       is3d: is3d,
