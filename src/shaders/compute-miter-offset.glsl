@@ -31,12 +31,13 @@ vec2 computeMiterOffset (
   vec2 dir = vec2(0.0);
   float len = thickness * thicknessScale;
 
+  // OPTIM: Improve equality checks
   // starting point uses (next - current)
-  if (currScreen == prevScreen) {
+  if (distance(currScreen, prevScreen) < 0.0001) {
     dir = normalize(nextScreen - currScreen);
   }
   // ending point uses (current - previous)
-  else if (currScreen == nextScreen) {
+  else if (distance(currScreen, nextScreen) < 0.0001) {
     dir = normalize(currScreen - prevScreen);
   }
   // somewhere in middle, needs a join
