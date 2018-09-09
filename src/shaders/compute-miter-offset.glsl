@@ -33,11 +33,11 @@ vec2 computeMiterOffset (
 
   // OPTIM: Improve equality checks
   // starting point uses (next - current)
-  if (distance(currScreen, prevScreen) < 0.0001) {
+  if (currScreen == prevScreen) {
     dir = normalize(nextScreen - currScreen);
   }
   // ending point uses (current - previous)
-  else if (distance(currScreen, nextScreen) < 0.0001) {
+  else if (currScreen == nextScreen) {
     dir = normalize(currScreen - prevScreen);
   }
   // somewhere in middle, needs a join
