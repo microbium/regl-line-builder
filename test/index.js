@@ -159,9 +159,9 @@ test('builder - create paths', function (t) {
     bufferSize: 1024
   })
   var ctx = lines.getContext()
-  var cursor = lines.state.cursor
   var position = lines.resources.position
   var offset = lines.resources.offset
+  var cursor, activePath
 
   ctx.beginPath()
   ctx.moveTo(10, 11)
@@ -170,12 +170,22 @@ test('builder - create paths', function (t) {
   ctx.lineTo(40, 41)
   ctx.stroke()
 
+  cursor = lines.state.cursor
+  activePath = lines.state.activePath
+
   t.equal(cursor.quad, 3,
     'cursor.quad')
   t.equal(cursor.element, 12,
     'cursor.element')
   t.equal(cursor.vertex, 6,
     'cursor.vertex')
+
+  t.equal(activePath.points.length, 4,
+    'activePath.points.length')
+  t.equal(activePath.count, 4,
+    'activePath.count')
+  t.equal(activePath.points[0].length, 2,
+    'activePath.points dimensions')
 
   t.deepEqual(
     slice.call(position.view, 0, 6 * 2 * 2), [
@@ -200,12 +210,22 @@ test('builder - create paths', function (t) {
   ctx.lineTo(90, 91)
   ctx.stroke()
 
+  cursor = lines.state.cursor
+  activePath = lines.state.activePath
+
   t.equal(cursor.quad, 7,
     'cursor.quad')
   t.equal(cursor.element, 26,
     'cursor.element')
   t.equal(cursor.vertex, 13,
     'cursor.vertex')
+
+  t.equal(activePath.points.length, 5,
+    'activePath.points.length')
+  t.equal(activePath.count, 5,
+    'activePath.count')
+  t.equal(activePath.points[0].length, 2,
+    'activePath.points dimensions')
 
   t.deepEqual(
     slice.call(position.view, 0, 13 * 2 * 2), [

@@ -1,4 +1,5 @@
 import { vec2, vec3, mat2d, mat4 } from 'gl-matrix'
+import { LinePath } from './LinePath'
 import { setRGB } from './utils/color'
 import { clamp } from './utils/math'
 import { inherit } from './utils/ctor'
@@ -28,15 +29,6 @@ var CONTEXT_ACCESSORS = [
 var MAX_UINT16_INT = 65536
 
 var scratchVec = vec3.create()
-
-function LinePath () {
-  this.offset = 0
-  this.count = 0
-  this.totalLength = 0
-  this.isClosed = false
-}
-
-inherit(null, LinePath, {})
 
 export function LineBuilder (regl, opts_) {
   var opts = opts_ || {}
@@ -87,7 +79,9 @@ inherit(null, LineBuilder, {
       activePath: null,
       prevPosition: vec3.create(),
       saveStack: [],
-      scratchPath: LinePath.create()
+      scratchPath: LinePath.create({
+        dimensions: opts.dimensions
+      })
     }
   },
 
@@ -425,12 +419,10 @@ inherit(null, LineBuilder, {
     var activePath = state.activePath
     var offset = !activePath ? 0
       : activePath.offset + activePath.count
-
     var nextPath = state.scratchPath
+
+    nextPath.reset()
     nextPath.offset = offset
-    nextPath.count = 0
-    nextPath.totalLength = 0
-    nextPath.isClosed = false
 
     state.activePath = nextPath
   },
@@ -507,7 +499,8 @@ inherit(null, LineBuilder, {
     colorView[bia] = colorView[bia + 4] = color[3]
 
     vec2.copy(prevPosition, pos)
-    activePath.count += 1
+    activePath.addPoint(pos)
+
     cursor.vertex += 2
   },
 
@@ -577,7 +570,8 @@ inherit(null, LineBuilder, {
     elementsView[evi + 5] = dio
 
     vec2.copy(prevPosition, pos)
-    activePath.count += 1
+    activePath.addPoint(pos)
+
     cursor.quad += 1
     cursor.element += 2
     cursor.vertex += 1
