@@ -1,9 +1,12 @@
 import { vec2, vec3, mat2d, mat4 } from 'gl-matrix'
+import triangulate from 'earcut'
+
 import { LinePath } from './LinePath'
 import { setRGB } from './utils/color'
 import { clamp } from './utils/math'
 import { inherit } from './utils/ctor'
 import { line } from './shaders/line'
+import { fill } from './shaders/fill'
 
 var FLOAT_BYTES = Float32Array.BYTES_PER_ELEMENT
 var CONTEXT_METHODS = [
@@ -14,6 +17,7 @@ var CONTEXT_METHODS = [
   'closePath',
   'stroke',
   'strokeRect',
+  'fill',
   'setTransform',
   'translate',
   'scale',
@@ -25,6 +29,7 @@ var CONTEXT_ACCESSORS = [
   'globalAlpha',
   'lineWidth',
   'strokeStyle'
+  // 'fillStyle'
 ]
 var MAX_UINT16_INT = 65536
 
@@ -55,6 +60,9 @@ inherit(null, LineBuilder, {
       vertex: 0,
       element: 0,
       quad: 0,
+      fillVertex: 0,
+      fillElement: 0,
+      fillTri: 0,
       dimensions: opts.dimensions,
       max: opts.bufferSize
     }
@@ -90,6 +98,7 @@ inherit(null, LineBuilder, {
     var cursor = this.state.cursor
 
     var views = this.createResourceViews(cursor.max, cursor.dimensions)
+
     var positionBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
@@ -116,6 +125,22 @@ inherit(null, LineBuilder, {
       data: views.elements
     })
 
+    var fillPositionBuffer = regl.buffer({
+      usage: 'dynamic',
+      type: 'float',
+      data: views.fillPosition
+    })
+    var fillColorBuffer = regl.buffer({
+      usage: 'dynamic',
+      type: 'float',
+      data: views.fillColor
+    })
+    var fillElementsBuffer = regl.elements({
+      usage: 'dynamic',
+      primitive: 'triangles',
+      data: views.fillElements
+    })
+
     return {
       position: {
         view: views.position,
@@ -136,10 +161,23 @@ inherit(null, LineBuilder, {
       elements: {
         view: views.elements,
         buffer: elementsBuffer
+      },
+      fillPosition: {
+        view: views.fillPosition,
+        buffer: fillPositionBuffer
+      },
+      fillColor: {
+        view: views.fillColor,
+        buffer: fillColorBuffer
+      },
+      fillElements: {
+        view: views.fillElements,
+        buffer: fillElementsBuffer
       }
     }
   },
 
+  // TODO: Cleanup line / fill naming
   createResourceViews: function (size, dimensions) {
     var ElementsArrayCtor = this.getElementsCtor(size)
     return {
@@ -147,7 +185,10 @@ inherit(null, LineBuilder, {
       offset: new Float32Array(size * 2),
       color: new Float32Array(size * 4 * 2),
       ud: new Float32Array(size * 2 * 3),
-      elements: new ElementsArrayCtor(size * 4)
+      elements: new ElementsArrayCtor(size * 4),
+      fillPosition: new Float32Array(size * dimensions),
+      fillColor: new Float32Array(size * 4),
+      fillElements: new ElementsArrayCtor(size * 3) // fill elements size?
     }
   },
 
@@ -166,30 +207,40 @@ inherit(null, LineBuilder, {
   createAttributes: function () {
     var resources = this.resources
     var dimensions = this.state.cursor.dimensions
+
     var position = resources.position
     var color = resources.color
     var ud = resources.ud
     var offset = resources.offset
 
+    var fillPosition = resources.fillPosition
+
     return {
-      prevPosition: {
-        buffer: position.buffer,
-        offset: 0,
-        stride: FLOAT_BYTES * dimensions
+      line: {
+        prevPosition: {
+          buffer: position.buffer,
+          offset: 0,
+          stride: FLOAT_BYTES * dimensions
+        },
+        currPosition: {
+          buffer: position.buffer,
+          offset: FLOAT_BYTES * dimensions * 2,
+          stride: FLOAT_BYTES * dimensions
+        },
+        nextPosition: {
+          buffer: position.buffer,
+          offset: FLOAT_BYTES * dimensions * 4,
+          stride: FLOAT_BYTES * dimensions
+        },
+        offset: offset.buffer,
+        ud: ud.buffer,
+        color: color.buffer
       },
-      currPosition: {
-        buffer: position.buffer,
-        offset: FLOAT_BYTES * dimensions * 2,
-        stride: FLOAT_BYTES * dimensions
-      },
-      nextPosition: {
-        buffer: position.buffer,
-        offset: FLOAT_BYTES * dimensions * 4,
-        stride: FLOAT_BYTES * dimensions
-      },
-      offset: offset.buffer,
-      ud: ud.buffer,
-      color: color.buffer
+      fill: {
+        position: {
+          buffer: fillPosition.buffer
+        }
+      }
     }
   },
 
@@ -223,62 +274,89 @@ inherit(null, LineBuilder, {
       model: regl.prop('model'),
       tint: regl.prop('tint')
     }
-    var count = function () {
-      return state.cursor.quad * 6
+
+    var depth = {
+      enable: true
+    }
+    var cull = {
+      enable: true,
+      face: 'back'
+    }
+    var blend = {
+      enable: true,
+      equation: 'add',
+      func: {
+        src: 'src alpha',
+        dst: 'one minus src alpha'
+      }
     }
 
-    var defaultDrawArgs = {
+    var defaultLineDrawArgs = {
       vert: line.vert,
       frag: line.frag,
       uniforms: uniforms,
-      attributes: attributes,
+      attributes: attributes.line,
       elements: resources.elements.buffer,
-      count: count,
-      depth: {
-        enable: true
+      count: function () {
+        return state.cursor.quad * 6
       },
-      cull: {
-        enable: true,
-        face: 'back'
-      },
-      blend: {
-        enable: true,
-        equation: 'add',
-        func: {
-          src: 'src alpha',
-          dst: 'one minus src alpha'
-        }
-      }
+      depth: depth,
+      cull: cull,
+      blend: blend
     }
-    var drawArgs = opts.drawArgs
-      ? this.combineDrawArgs(defaultDrawArgs, opts.drawArgs)
-      : defaultDrawArgs
+    var drawLineArgs = opts.drawArgs
+      ? this.combineDrawArgs(defaultLineDrawArgs, opts.drawArgs)
+      : defaultLineDrawArgs
+
+    var defaultFillDrawArgs = {
+      vert: fill.vert,
+      frag: fill.frag,
+      uniforms: uniforms,
+      attributes: attributes.fill,
+      elements: resources.fillElements.buffer,
+      count: function () {
+        return state.cursor.fillTri * 3
+      },
+      depth: depth,
+      cull: cull,
+      blend: blend
+    }
+    var drawFillArgs = opts.drawArgs
+      ? this.combineDrawArgs(defaultFillDrawArgs, opts.drawArgs)
+      : defaultFillDrawArgs
 
     if (state.is3d) {
       var define3d = '#define DIMENSIONS_3\n'
-      drawArgs.vert = define3d + drawArgs.vert
-      drawArgs.frag = define3d + drawArgs.frag
+      drawLineArgs.vert = define3d + drawLineArgs.vert
+      drawLineArgs.frag = define3d + drawLineArgs.frag
     }
 
     // TODO: Share base regl command between multiple LineBuilder instances
-    var drawCommand = regl(drawArgs)
+    var drawLineCommand = regl(drawLineArgs)
+    var drawFillCommand = regl(drawFillArgs)
 
     return function (params) {
       if (state.sync.vertex < state.cursor.vertex) {
         this.syncResourceBuffers()
         state.sync.vertex = state.cursor.vertex
       }
-      return drawCommand(params)
+      drawFillCommand(params)
+      drawLineCommand(params)
     }.bind(this)
   },
 
   syncResourceBuffers: function () {
     var resources = this.resources
+
     var position = resources.position
     var offset = resources.offset
     var color = resources.color
     var ud = resources.ud
     var elements = resources.elements
+
+    var fillPosition = resources.fillPosition
+    var fillColor = resources.fillColor
+    var fillElements = resources.fillElements
 
     // TODO: Use cursor position to subdata at byte offset
     position.buffer.subdata(position.view)
@@ -286,6 +364,10 @@ inherit(null, LineBuilder, {
     color.buffer.subdata(color.view)
     ud.buffer.subdata(ud.view)
     elements.buffer.subdata(elements.view)
+
+    fillPosition.buffer.subdata(fillPosition.view)
+    fillColor.buffer.subdata(fillColor.view)
+    fillElements.buffer.subdata(fillElements.view)
   },
 
   getContext: function (type_) {
@@ -341,9 +423,12 @@ inherit(null, LineBuilder, {
     var style = state.style
     var transform = state.transform
 
-    cursor.quad = 0
-    cursor.element = 0
     cursor.vertex = 0
+    cursor.element = 0
+    cursor.quad = 0
+    cursor.fillVertex = 0
+    cursor.fillElement = 0
+    cursor.fillTri = 0
     sync.vertex = 0
 
     style.lineWidth = 1
@@ -504,7 +589,7 @@ inherit(null, LineBuilder, {
     cursor.vertex += 2
   },
 
-  lineTo: function (x, y, z_) {
+  lineTo: function (x, y, z_, isClosing_) {
     var z = z_ || 0
 
     var state = this.state
@@ -615,6 +700,8 @@ inherit(null, LineBuilder, {
     this.lineTo(x, y, z)
   },
 
+  // Stroke
+
   stroke: function () {
     var state = this.state
     var activePath = state.activePath
@@ -687,6 +774,45 @@ inherit(null, LineBuilder, {
     this.lineTo(x, y + height)
     this.closePath()
     this.stroke()
+  },
+
+  // Fill
+
+  fill: function () {
+    var state = this.state
+    var cursor = state.cursor
+    var activePath = state.activePath
+
+    var resources = this.resources
+    var fillPosition = resources.fillPosition.view
+    // var fillColors = resources.fillColors.view
+    var fillElements = resources.fillElements.view
+
+    var points = activePath.points
+    var pointCount = activePath.count
+    var flatPoints = new Float32Array(pointCount * 2)
+
+    for (var i = 0; i < pointCount; i++) {
+      var point = points[i]
+      var pos = this.transformInput(point[0], point[1])
+
+      var ix = i * 2
+      var iy = ix + 1
+      flatPoints[ix] = fillPosition[cursor.fillVertex * 2 + ix] = pos[0]
+      flatPoints[iy] = fillPosition[cursor.fillVertex * 2 + iy] = pos[1]
+    }
+
+    var pointElements = triangulate(flatPoints)
+    var pointTris = pointElements.length / 3
+
+    for (var j = 0; j < pointTris; j++) {
+      fillElements[cursor.fillTri * 3 + j * 3 + 0] = cursor.fillVertex + pointElements[j * 3 + 0]
+      fillElements[cursor.fillTri * 3 + j * 3 + 1] = cursor.fillVertex + pointElements[j * 3 + 1]
+      fillElements[cursor.fillTri * 3 + j * 3 + 2] = cursor.fillVertex + pointElements[j * 3 + 2]
+    }
+
+    cursor.fillVertex += pointCount
+    cursor.fillTri += pointTris
   },
 
   // Vector Space Transforms

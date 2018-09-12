@@ -54,6 +54,16 @@ ctx.lineTo(-800, 200)
 ctx.lineTo(-600, 100)
 ctx.stroke()
 
+ctx.strokeRect(-100, -200, 100, 200)
+ctx.fill()
+
+ctx.strokeRect(0, 200, 100, 200)
+ctx.fill()
+
+// ctx.beginPath()
+// ctx.strokeRect(0, 0, 100, 200)
+// ctx.fill()
+
 ctx.lineWidth = 20
 ctx.beginPath()
 ctx.moveTo(400, -400)
