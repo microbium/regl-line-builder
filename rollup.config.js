@@ -7,15 +7,17 @@ var commonPlugins = [
   glslify()
 ]
 
+var globals = {
+  'gl-matrix': 'glMatrix',
+  'earcut': 'earcut'
+}
+
 var configs = {
   development: {
     plugins: commonPlugins
   },
   production: {
-    external: ['gl-matrix'],
-    globals: {
-      'gl-matrix': 'glMatrix'
-    },
+    external: ['gl-matrix', 'earcut'],
     plugins: [].concat(commonPlugins, [
       cleanup({
         maxEmptyLines: -1
@@ -25,11 +27,13 @@ var configs = {
       {
         format: 'umd',
         name: 'REGLLineBuilder',
-        file: 'dist/regl-line-builder.js'
+        file: 'dist/regl-line-builder.js',
+        globals: globals
       },
       {
         format: 'es',
-        file: 'dist/regl-line-builder.module.js'
+        file: 'dist/regl-line-builder.module.js',
+        globals: globals
       }
     ]
   }
