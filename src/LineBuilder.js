@@ -265,16 +265,17 @@ inherit(null, LineBuilder, {
     var state = this.state
 
     var uniforms = {
-      aspect: function (params, context) {
-        return params.viewportWidth / params.viewportHeight
+      line: {
+        aspect: function (params, context) {
+          return params.viewportWidth / params.viewportHeight
+        },
+        thickness: regl.prop('thickness'),
+        miterLimit: regl.prop('miterLimit'),
+        adjustProjectedThickness: function (params, context) {
+          return context.adjustProjectedThickness === true ? 1 : 0
+        }
       },
-      thickness: regl.prop('thickness'),
-      miterLimit: regl.prop('miterLimit'),
-      adjustProjectedThickness: function (params, context) {
-        return context.adjustProjectedThickness === true ? 1 : 0
-      },
-      model: regl.prop('model'),
-      tint: regl.prop('tint')
+      fill: {}
     }
 
     var depth = {
@@ -293,10 +294,17 @@ inherit(null, LineBuilder, {
       }
     }
 
+    var drawArgs = {
+      uniforms: {
+        model: regl.prop('model'),
+        tint: regl.prop('tint')
+      }
+    }
+
     var defaultLineDrawArgs = {
       vert: line.vert,
       frag: line.frag,
-      uniforms: uniforms,
+      uniforms: uniforms.line,
       attributes: attributes.line,
       elements: resources.elements.buffer,
       count: function () {
@@ -306,14 +314,14 @@ inherit(null, LineBuilder, {
       cull: cull,
       blend: blend
     }
-    var drawLineArgs = opts.drawArgs
-      ? this.combineDrawArgs(defaultLineDrawArgs, opts.drawArgs)
+    var drawLineArgs = opts.drawLineArgs
+      ? this.combineDrawArgs(defaultLineDrawArgs, opts.drawLineArgs)
       : defaultLineDrawArgs
 
     var defaultFillDrawArgs = {
       vert: fill.vert,
       frag: fill.frag,
-      uniforms: uniforms,
+      uniforms: uniforms.fill,
       attributes: attributes.fill,
       elements: resources.fillElements.buffer,
       count: function () {
@@ -323,8 +331,8 @@ inherit(null, LineBuilder, {
       cull: cull,
       blend: blend
     }
-    var drawFillArgs = opts.drawArgs
-      ? this.combineDrawArgs(defaultFillDrawArgs, opts.drawArgs)
+    var drawFillArgs = opts.drawFillArgs
+      ? this.combineDrawArgs(defaultFillDrawArgs, opts.drawFillArgs)
       : defaultFillDrawArgs
 
     if (state.is3d) {
@@ -334,6 +342,7 @@ inherit(null, LineBuilder, {
     }
 
     // TODO: Share base regl command between multiple LineBuilder instances
+    var drawCommand = regl(drawArgs)
     var drawLineCommand = regl(drawLineArgs)
     var drawFillCommand = regl(drawFillArgs)
 
@@ -342,8 +351,10 @@ inherit(null, LineBuilder, {
         this.syncResourceBuffers()
         state.sync.vertex = state.cursor.vertex
       }
-      drawFillCommand(params)
-      drawLineCommand(params)
+      return drawCommand(params, function () {
+        drawFillCommand(params)
+        drawLineCommand(params)
+      })
     }.bind(this)
   },
 
@@ -400,21 +411,11 @@ inherit(null, LineBuilder, {
     var nextViews = this.createResourceViews(size, cursor.dimensions)
 
     cursor.max = size
-    resources.position.view = nextViews.position
-    resources.position.buffer({
-      data: nextViews.position })
-    resources.offset.view = nextViews.offset
-    resources.offset.buffer({
-      data: nextViews.offset })
-    resources.color.view = nextViews.color
-    resources.color.buffer({
-      data: nextViews.color })
-    resources.ud.view = nextViews.ud
-    resources.ud.buffer({
-      data: nextViews.ud })
-    resources.elements.view = nextViews.elements
-    resources.elements.buffer({
-      data: nextViews.elements })
+    Object.keys(nextViews).forEach(function (key) {
+      resources[key].view = nextViews[key]
+      resources[key].buffer({
+        data: nextViews[key] })
+    })
   },
 
   reset: function () {
