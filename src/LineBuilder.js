@@ -28,8 +28,8 @@ var CONTEXT_METHODS = [
 var CONTEXT_ACCESSORS = [
   'globalAlpha',
   'lineWidth',
-  'strokeStyle'
-  // 'fillStyle'
+  'strokeStyle',
+  'fillStyle'
 ]
 var MAX_UINT16_INT = 65536
 
@@ -70,9 +70,11 @@ inherit(null, LineBuilder, {
       vertex: 0
     }
     var style = {
-      color: [0, 0, 0, 1],
+      color: new Float32Array([0, 0, 0, 1]),
       lineWidth: 1,
-      strokeStyle: '#000000'
+      strokeStyle: '#000000',
+      fillColor: new Float32Array([0, 0, 0, 1]),
+      fillStyle: '#000000'
     }
     var transform = {
       isIdentity: true,
@@ -214,6 +216,7 @@ inherit(null, LineBuilder, {
     var offset = resources.offset
 
     var fillPosition = resources.fillPosition
+    var fillColor = resources.fillColor
 
     return {
       line: {
@@ -237,9 +240,8 @@ inherit(null, LineBuilder, {
         color: color.buffer
       },
       fill: {
-        position: {
-          buffer: fillPosition.buffer
-        }
+        position: fillPosition.buffer,
+        color: fillColor.buffer
       }
     }
   },
@@ -276,7 +278,7 @@ inherit(null, LineBuilder, {
     }
 
     var depth = {
-      enable: true
+      enable: false
     }
     var cull = {
       enable: true,
@@ -702,7 +704,6 @@ inherit(null, LineBuilder, {
 
   // Stroke
 
-  // TODO: Setup all buffers in `stroke` to allow rendering fills without strokes
   stroke: function () {
     var state = this.state
     var activePath = state.activePath
@@ -783,11 +784,12 @@ inherit(null, LineBuilder, {
     var state = this.state
     var cursor = state.cursor
     var activePath = state.activePath
+    var color = state.style.fillColor
 
     var resources = this.resources
-    var fillPosition = resources.fillPosition.view
-    // var fillColors = resources.fillColors.view
-    var fillElements = resources.fillElements.view
+    var fillPositionView = resources.fillPosition.view
+    var fillColorView = resources.fillColor.view
+    var fillElementsView = resources.fillElements.view
 
     var points = activePath.points
     var pointCount = activePath.count + (activePath.isClosed ? -1 : 0)
@@ -795,14 +797,25 @@ inherit(null, LineBuilder, {
 
     var fvi = cursor.fillVertex
     var fvi2 = fvi * 2
+    var fvi4 = fvi * 4
     var fti = cursor.fillTri * 3
 
     for (var i = 0; i < pointCount; i++) {
       var point = points[i]
+
       var ix = i * 2
       var iy = ix + 1
-      flatPoints[ix] = fillPosition[fvi2 + ix] = point[0]
-      flatPoints[iy] = fillPosition[fvi2 + iy] = point[1]
+      fillPositionView[fvi2 + ix] = flatPoints[ix] = point[0]
+      fillPositionView[fvi2 + iy] = flatPoints[iy] = point[1]
+
+      var ir = i * 4
+      var ig = ir + 1
+      var ib = ir + 2
+      var ia = ir + 3
+      fillColorView[fvi4 + ir] = color[0]
+      fillColorView[fvi4 + ig] = color[1]
+      fillColorView[fvi4 + ib] = color[2]
+      fillColorView[fvi4 + ia] = color[3]
     }
 
     var pointElements = triangulate(flatPoints)
@@ -810,9 +823,9 @@ inherit(null, LineBuilder, {
 
     for (var j = 0; j < pointTris; j++) {
       var evi = j * 3
-      fillElements[fti + evi + 0] = fvi + pointElements[evi + 0]
-      fillElements[fti + evi + 1] = fvi + pointElements[evi + 1]
-      fillElements[fti + evi + 2] = fvi + pointElements[evi + 2]
+      fillElementsView[fti + evi + 0] = fvi + pointElements[evi + 0]
+      fillElementsView[fti + evi + 1] = fvi + pointElements[evi + 1]
+      fillElementsView[fti + evi + 2] = fvi + pointElements[evi + 2]
     }
 
     cursor.fillVertex += pointCount
@@ -924,6 +937,7 @@ inherit(null, LineBuilder, {
         },
         set: function (globalAlpha) {
           state.style.color[3] = globalAlpha
+          state.style.fillColor[3] = globalAlpha
           return globalAlpha
         }
       }
@@ -939,6 +953,20 @@ inherit(null, LineBuilder, {
           setRGB(color, strokeStyle)
           state.style.strokeStyle = strokeStyle
           return strokeStyle
+        }
+      }
+    },
+
+    fillStyle: function (state) {
+      return {
+        get: function () {
+          return state.style.fillStyle
+        },
+        set: function (fillStyle) {
+          var color = state.style.fillColor
+          setRGB(color, fillStyle)
+          state.style.fillStyle = fillStyle
+          return fillStyle
         }
       }
     }

@@ -45,6 +45,7 @@ ctx.stroke()
 
 ctx.globalAlpha = 0.95
 ctx.strokeStyle = '#eeeeee'
+ctx.fillStyle = '#666666'
 ctx.lineWidth = 22
 ctx.beginPath()
 ctx.moveTo(-400, -400)
@@ -53,16 +54,7 @@ ctx.lineTo(-700, 500)
 ctx.lineTo(-800, 200)
 ctx.lineTo(-600, 100)
 ctx.stroke()
-
-ctx.strokeRect(-100, -200, 100, 200)
 ctx.fill()
-
-ctx.strokeRect(0, 200, 100, 200)
-ctx.fill()
-
-// ctx.beginPath()
-// ctx.strokeRect(0, 0, 100, 200)
-// ctx.fill()
 
 ctx.lineWidth = 20
 ctx.beginPath()
@@ -72,22 +64,29 @@ ctx.lineTo(700, 500)
 ctx.lineTo(800, 200)
 ctx.lineTo(600, 100)
 ctx.stroke()
+ctx.fill()
 
 ctx.globalAlpha = 0.9
 ctx.strokeStyle = '#eeffff'
+ctx.fillStyle = '#000000'
 ctx.lineWidth = 10
 ctx.beginPath()
 ctx.arc(400, 50, 50, 0, Math.PI)
 ctx.stroke()
+ctx.fill()
+
 ctx.beginPath()
 ctx.arc(-400, 50, 50, 0, Math.PI)
 ctx.stroke()
+ctx.fill()
 
 ctx.strokeStyle = '#cccccc'
+ctx.fillStyle = '#222222'
 ctx.lineWidth = 30
 ctx.beginPath()
 ctx.arc(0, -400, 240, 0, Math.PI, true)
 ctx.stroke()
+ctx.fill()
 
 regl.frame(({ tick }) => {
   const { sin } = Math
@@ -104,7 +103,7 @@ regl.frame(({ tick }) => {
 
     lines.draw({
       model: mat4.identity([]),
-      tint: [0.8 * t0, 0, 0.5 * t1, 1],
+      tint: [0.4 * t0 + 0.4, 0, 0.5 * t1 + 0.5, 1],
       thickness: 1 + t0 * 0.5,
       miterLimit: 12,
       adjustProjectedThickness: true

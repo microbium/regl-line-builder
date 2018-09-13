@@ -10,11 +10,15 @@ uniform mat4 view;
 attribute vec2 position;
 // #endif
 
-// attribute vec4 color;
+attribute vec4 color;
+
+varying vec4 vColor;
 
 void main() {
   mat4 projViewModel = projection * view * model;
   vec4 posProjected = projViewModel * vec4(position * 0.5, 0.0, 1.0);
+
+  vColor = color;
 
   gl_Position = posProjected;
 }
