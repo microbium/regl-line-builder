@@ -702,6 +702,7 @@ inherit(null, LineBuilder, {
 
   // Stroke
 
+  // TODO: Setup all buffers in `stroke` to allow rendering fills without strokes
   stroke: function () {
     var state = this.state
     var activePath = state.activePath
@@ -789,26 +790,29 @@ inherit(null, LineBuilder, {
     var fillElements = resources.fillElements.view
 
     var points = activePath.points
-    var pointCount = activePath.count
+    var pointCount = activePath.count + (activePath.isClosed ? -1 : 0)
     var flatPoints = new Float32Array(pointCount * 2)
+
+    var fvi = cursor.fillVertex
+    var fvi2 = fvi * 2
+    var fti = cursor.fillTri * 3
 
     for (var i = 0; i < pointCount; i++) {
       var point = points[i]
-      var pos = this.transformInput(point[0], point[1])
-
       var ix = i * 2
       var iy = ix + 1
-      flatPoints[ix] = fillPosition[cursor.fillVertex * 2 + ix] = pos[0]
-      flatPoints[iy] = fillPosition[cursor.fillVertex * 2 + iy] = pos[1]
+      flatPoints[ix] = fillPosition[fvi2 + ix] = point[0]
+      flatPoints[iy] = fillPosition[fvi2 + iy] = point[1]
     }
 
     var pointElements = triangulate(flatPoints)
     var pointTris = pointElements.length / 3
 
     for (var j = 0; j < pointTris; j++) {
-      fillElements[cursor.fillTri * 3 + j * 3 + 0] = cursor.fillVertex + pointElements[j * 3 + 0]
-      fillElements[cursor.fillTri * 3 + j * 3 + 1] = cursor.fillVertex + pointElements[j * 3 + 1]
-      fillElements[cursor.fillTri * 3 + j * 3 + 2] = cursor.fillVertex + pointElements[j * 3 + 2]
+      var evi = j * 3
+      fillElements[fti + evi + 0] = fvi + pointElements[evi + 0]
+      fillElements[fti + evi + 1] = fvi + pointElements[evi + 1]
+      fillElements[fti + evi + 2] = fvi + pointElements[evi + 2]
     }
 
     cursor.fillVertex += pointCount
