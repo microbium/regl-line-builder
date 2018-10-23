@@ -1,16 +1,5 @@
-import { mat2d, mat4, vec2, vec3 } from 'gl-matrix';
-
-function setRGB (out, color) {
-  var hexString = parseInt(color.replace(/^#/, ''), 16);
-  var hex = Math.floor(hexString);
-  out[0] = (hex >> 16 & 255) / 255;
-  out[1] = (hex >> 8 & 255) / 255;
-  out[2] = (hex & 255) / 255;
-}
-
-function clamp (x, min, max) {
-  return Math.max(Math.min(x, max), min)
-}
+import { vec2, vec3, mat2d, mat4 } from 'gl-matrix';
+import triangulate from 'earcut';
 
 function ctor (Ctor) {
   return function () {
@@ -27,13 +16,69 @@ function inherit (ParentCtor, Ctor, proto) {
   Object.assign(Ctor.prototype, proto);
 }
 
+function LinePath (opts) {
+  this.dimensions = opts.dimensions;
+  this.offset = 0;
+  this.count = 0;
+  this.totalLength = 0;
+  this.isClosed = false;
+  this.points = [];
+}
+
+inherit(null, LinePath, {
+  reset: function () {
+    this.offset = 0;
+    this.count = 0;
+    this.totalLength = 0;
+    this.isClosed = false;
+  },
+
+  addPoint: function (pos) {
+    var points = this.points;
+    var dimensions = this.dimensions;
+    var nextPoint = points[this.count++];
+
+    if (!nextPoint) {
+      nextPoint = dimensions === 2 ? vec2.create() : vec3.create();
+      points.push(nextPoint);
+    }
+
+    if (dimensions === 2) {
+      vec2.copy(nextPoint, pos);
+    } else {
+      vec3.copy(nextPoint, pos);
+    }
+  }
+});
+
+function setRGB (out, color) {
+  var hexString = parseInt(color.replace(/^#/, ''), 16);
+  var hex = Math.floor(hexString);
+  out[0] = (hex >> 16 & 255) / 255;
+  out[1] = (hex >> 8 & 255) / 255;
+  out[2] = (hex & 255) / 255;
+}
+
+function clamp (x, min, max) {
+  return Math.max(Math.min(x, max), min)
+}
+
 var frag = "precision highp float;\n#define GLSLIFY 1\nuniform vec4 tint;\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  gl_FragColor = vColor * tint;\n}\n";
 
-var vert = "precision highp float;\n#define GLSLIFY 1\n\n// Based on WebGL lines demo\n// (c) 2015 Matt DesLauriers. MIT License\n// https://github.com/mattdesl/webgl-lines/\n\n// TODO: Maybe make separate package to make reuse with custom shaders easier?\n// TODO: Maybe use struct to pass some of this data?\nvec2 computeMiterOffset (\n  mat4 projection_0,\n  int adjustProjectedThickness_0,\n  float aspect_0,\n  float thickness_0,\n  float miterLimit_0,\n  vec4 prevProjected_0,\n  vec4 currProjected_0,\n  vec4 nextProjected_0\n) {\n  vec2 aspectVec = vec2(aspect_0, 1.0);\n\n  // get 2D screen space with W divide and aspect correction\n  vec2 prevScreen = prevProjected_0.xy / prevProjected_0.w * aspectVec;\n  vec2 currScreen = currProjected_0.xy / currProjected_0.w * aspectVec;\n  vec2 nextScreen = nextProjected_0.xy / nextProjected_0.w * aspectVec;\n\n  float thicknessScale = 1.0;\n  if (adjustProjectedThickness_0 == 1) {\n    vec4 singlePixelProjected = projection_0 * vec4(2.0, 0.0, 0.0, 1.0);\n    vec2 singlePixel = singlePixelProjected.xy / singlePixelProjected.w * aspectVec;\n    thicknessScale = singlePixel.x;\n  }\n\n  vec2 dir = vec2(0.0);\n  float len = thickness_0 * thicknessScale;\n\n  // OPTIM: Improve equality checks\n  // starting point uses (next - current)\n  if (distance(currScreen, prevScreen) < 0.0001) {\n    dir = normalize(nextScreen - currScreen);\n  }\n  // ending point uses (current - previous)\n  else if (distance(currScreen, nextScreen) < 0.0001) {\n    dir = normalize(currScreen - prevScreen);\n  }\n  // somewhere in middle, needs a join\n  else {\n    // get directions from (C - B) and (B - A)\n    vec2 dirA = normalize((currScreen - prevScreen));\n    if (int(miterLimit_0) == -1) {\n      dir = dirA;\n    } else {\n      vec2 dirB = normalize((nextScreen - currScreen));\n      // now compute the miter join normal and length\n      vec2 tangent = normalize(dirA + dirB);\n      vec2 perp = vec2(-dirA.y, dirA.x);\n      vec2 miter = vec2(-tangent.y, tangent.x);\n      dir = tangent;\n      len /= dot(miter, perp);\n    }\n  }\n\n  return vec2(-dir.y, dir.x) *\n    clamp(len, 0.0, miterLimit_0 * thicknessScale) / aspectVec;\n}\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\nuniform float aspect;\nuniform int adjustProjectedThickness;\n\nuniform float thickness;\nuniform float miterLimit;\n\n#ifdef DIMENSIONS_3\nattribute vec3 prevPosition;\nattribute vec3 currPosition;\nattribute vec3 nextPosition;\n#else\nattribute vec2 prevPosition;\nattribute vec2 currPosition;\nattribute vec2 nextPosition;\n#endif\n\nattribute float offset;\nattribute vec4 color;\nattribute vec2 ud;\n\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n\n#ifdef DIMENSIONS_3\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 1.0);\n#else\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 0.0, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 0.0, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);\n#endif\n\n  vec2 miterOffset = computeMiterOffset(\n    projection, adjustProjectedThickness,\n    aspect, thickness, miterLimit,\n    prevProjected, currProjected, nextProjected);\n\n  vColor = color;\n  vUD = ud;\n\n  gl_Position = currProjected + vec4(miterOffset * offset, 0.0, 1.0);\n}\n";
+var vert = "precision highp float;\n#define GLSLIFY 1\n\n// Based on WebGL lines demo\n// (c) 2015 Matt DesLauriers. MIT License\n// https://github.com/mattdesl/webgl-lines/\n\n// TODO: Maybe make separate package to make reuse with custom shaders easier?\n// TODO: Maybe use struct to pass some of this data?\nvec2 computeMiterOffset (\n  mat4 projection_0,\n  int adjustProjectedThickness_0,\n  float aspect_0,\n  float thickness_0,\n  float miterLimit_0,\n  vec4 prevProjected_0,\n  vec4 currProjected_0,\n  vec4 nextProjected_0\n) {\n  vec2 aspectVec = vec2(aspect_0, 1.0);\n\n  // get 2D screen space with W divide and aspect correction\n  vec2 prevScreen = prevProjected_0.xy / prevProjected_0.w * aspectVec;\n  vec2 currScreen = currProjected_0.xy / currProjected_0.w * aspectVec;\n  vec2 nextScreen = nextProjected_0.xy / nextProjected_0.w * aspectVec;\n\n  float thicknessScale = 1.0;\n  if (adjustProjectedThickness_0 == 1) {\n    vec4 singlePixelProjected = projection_0 * vec4(2.0, 0.0, 0.0, 1.0);\n    vec2 singlePixel = singlePixelProjected.xy / singlePixelProjected.w * aspectVec;\n    thicknessScale = singlePixel.x;\n  }\n\n  vec2 dir = vec2(0.0);\n  float len = thickness_0 * thicknessScale;\n\n  // OPTIM: Improve equality checks\n  // starting point uses (next - current)\n  if (currScreen == prevScreen) {\n    dir = normalize(nextScreen - currScreen);\n  }\n  // ending point uses (current - previous)\n  else if (currScreen == nextScreen) {\n    dir = normalize(currScreen - prevScreen);\n  }\n  // somewhere in middle, needs a join\n  else {\n    // get directions from (C - B) and (B - A)\n    vec2 dirA = normalize((currScreen - prevScreen));\n    if (int(miterLimit_0) == -1) {\n      dir = dirA;\n    } else {\n      vec2 dirB = normalize((nextScreen - currScreen));\n      // now compute the miter join normal and length\n      vec2 tangent = normalize(dirA + dirB);\n      vec2 perp = vec2(-dirA.y, dirA.x);\n      vec2 miter = vec2(-tangent.y, tangent.x);\n      dir = tangent;\n      len /= dot(miter, perp);\n    }\n  }\n\n  return vec2(-dir.y, dir.x) *\n    clamp(len, 0.0, miterLimit_0 * thicknessScale) / aspectVec;\n}\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\nuniform float aspect;\nuniform int adjustProjectedThickness;\n\nuniform float thickness;\nuniform float miterLimit;\n\n#ifdef DIMENSIONS_3\nattribute vec3 prevPosition;\nattribute vec3 currPosition;\nattribute vec3 nextPosition;\n#else\nattribute vec2 prevPosition;\nattribute vec2 currPosition;\nattribute vec2 nextPosition;\n#endif\n\nattribute float offset;\nattribute vec4 color;\nattribute vec2 ud;\n\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n\n#ifdef DIMENSIONS_3\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 1.0);\n#else\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 0.0, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 0.0, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);\n#endif\n\n  vec2 miterOffset = computeMiterOffset(\n    projection, adjustProjectedThickness,\n    aspect, thickness, miterLimit,\n    prevProjected, currProjected, nextProjected);\n\n  vColor = color;\n  vUD = ud;\n\n  gl_Position = currProjected + vec4(miterOffset * offset, 0.0, 1.0);\n}\n";
 
 var line = {
   frag: frag,
   vert: vert
+};
+
+var frag$1 = "precision highp float;\n#define GLSLIFY 1\nuniform vec4 tint;\nvarying vec4 vColor;\n\nvoid main() {\n  gl_FragColor = vColor * tint;\n}\n";
+
+var vert$1 = "precision highp float;\n#define GLSLIFY 1\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\n\n// #ifdef DIMENSIONS_3\n// attribute vec3 position;\n// #else\nattribute vec2 position;\n// #endif\n\nattribute vec4 color;\n\nvarying vec4 vColor;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n  vec4 posProjected = projViewModel * vec4(position, 0.0, 1.0);\n\n  vColor = color;\n\n  gl_Position = posProjected * vec4(0.5, 0.5, 0.0, 1.0);\n}\n";
+
+var fill = {
+  frag: frag$1,
+  vert: vert$1
 };
 
 var FLOAT_BYTES = Float32Array.BYTES_PER_ELEMENT;
@@ -45,6 +90,7 @@ var CONTEXT_METHODS = [
   'closePath',
   'stroke',
   'strokeRect',
+  'fill',
   'setTransform',
   'translate',
   'scale',
@@ -55,20 +101,12 @@ var CONTEXT_METHODS = [
 var CONTEXT_ACCESSORS = [
   'globalAlpha',
   'lineWidth',
-  'strokeStyle'
+  'strokeStyle',
+  'fillStyle'
 ];
 var MAX_UINT16_INT = 65536;
 
 var scratchVec = vec3.create();
-
-function LinePath () {
-  this.offset = 0;
-  this.count = 0;
-  this.totalLength = 0;
-  this.isClosed = false;
-}
-
-inherit(null, LinePath, {});
 
 function LineBuilder (regl, opts_) {
   var opts = opts_ || {};
@@ -95,6 +133,9 @@ inherit(null, LineBuilder, {
       vertex: 0,
       element: 0,
       quad: 0,
+      fillVertex: 0,
+      fillElement: 0,
+      fillTri: 0,
       dimensions: opts.dimensions,
       max: opts.bufferSize
     };
@@ -102,9 +143,11 @@ inherit(null, LineBuilder, {
       vertex: 0
     };
     var style = {
-      color: [0, 0, 0, 1],
+      color: new Float32Array([0, 0, 0, 1]),
       lineWidth: 1,
-      strokeStyle: '#000000'
+      strokeStyle: '#000000',
+      fillColor: new Float32Array([0, 0, 0, 1]),
+      fillStyle: '#000000'
     };
     var transform = {
       isIdentity: true,
@@ -119,7 +162,9 @@ inherit(null, LineBuilder, {
       activePath: null,
       prevPosition: vec3.create(),
       saveStack: [],
-      scratchPath: LinePath.create()
+      scratchPath: LinePath.create({
+        dimensions: opts.dimensions
+      })
     }
   },
 
@@ -128,6 +173,7 @@ inherit(null, LineBuilder, {
     var cursor = this.state.cursor;
 
     var views = this.createResourceViews(cursor.max, cursor.dimensions);
+
     var positionBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
@@ -154,6 +200,22 @@ inherit(null, LineBuilder, {
       data: views.elements
     });
 
+    var fillPositionBuffer = regl.buffer({
+      usage: 'dynamic',
+      type: 'float',
+      data: views.fillPosition
+    });
+    var fillColorBuffer = regl.buffer({
+      usage: 'dynamic',
+      type: 'float',
+      data: views.fillColor
+    });
+    var fillElementsBuffer = regl.elements({
+      usage: 'dynamic',
+      primitive: 'triangles',
+      data: views.fillElements
+    });
+
     return {
       position: {
         view: views.position,
@@ -174,6 +236,18 @@ inherit(null, LineBuilder, {
       elements: {
         view: views.elements,
         buffer: elementsBuffer
+      },
+      fillPosition: {
+        view: views.fillPosition,
+        buffer: fillPositionBuffer
+      },
+      fillColor: {
+        view: views.fillColor,
+        buffer: fillColorBuffer
+      },
+      fillElements: {
+        view: views.fillElements,
+        buffer: fillElementsBuffer
       }
     }
   },
@@ -185,7 +259,10 @@ inherit(null, LineBuilder, {
       offset: new Float32Array(size * 2),
       color: new Float32Array(size * 4 * 2),
       ud: new Float32Array(size * 2 * 3),
-      elements: new ElementsArrayCtor(size * 4)
+      elements: new ElementsArrayCtor(size * 4),
+      fillPosition: new Float32Array(size * dimensions),
+      fillColor: new Float32Array(size * 4),
+      fillElements: new ElementsArrayCtor(size * 3)
     }
   },
 
@@ -204,30 +281,40 @@ inherit(null, LineBuilder, {
   createAttributes: function () {
     var resources = this.resources;
     var dimensions = this.state.cursor.dimensions;
+
     var position = resources.position;
     var color = resources.color;
     var ud = resources.ud;
     var offset = resources.offset;
 
+    var fillPosition = resources.fillPosition;
+    var fillColor = resources.fillColor;
+
     return {
-      prevPosition: {
-        buffer: position.buffer,
-        offset: 0,
-        stride: FLOAT_BYTES * dimensions
+      line: {
+        prevPosition: {
+          buffer: position.buffer,
+          offset: 0,
+          stride: FLOAT_BYTES * dimensions
+        },
+        currPosition: {
+          buffer: position.buffer,
+          offset: FLOAT_BYTES * dimensions * 2,
+          stride: FLOAT_BYTES * dimensions
+        },
+        nextPosition: {
+          buffer: position.buffer,
+          offset: FLOAT_BYTES * dimensions * 4,
+          stride: FLOAT_BYTES * dimensions
+        },
+        offset: offset.buffer,
+        ud: ud.buffer,
+        color: color.buffer
       },
-      currPosition: {
-        buffer: position.buffer,
-        offset: FLOAT_BYTES * dimensions * 2,
-        stride: FLOAT_BYTES * dimensions
-      },
-      nextPosition: {
-        buffer: position.buffer,
-        offset: FLOAT_BYTES * dimensions * 4,
-        stride: FLOAT_BYTES * dimensions
-      },
-      offset: offset.buffer,
-      ud: ud.buffer,
-      color: color.buffer
+      fill: {
+        position: fillPosition.buffer,
+        color: fillColor.buffer
+      }
     }
   },
 
@@ -250,78 +337,120 @@ inherit(null, LineBuilder, {
     var state = this.state;
 
     var uniforms = {
-      aspect: function (params, context) {
-        return params.viewportWidth / params.viewportHeight
+      line: {
+        aspect: function (params, context) {
+          return params.viewportWidth / params.viewportHeight
+        },
+        thickness: regl.prop('thickness'),
+        miterLimit: regl.prop('miterLimit'),
+        adjustProjectedThickness: function (params, context) {
+          return context.adjustProjectedThickness === true ? 1 : 0
+        }
       },
-      thickness: regl.prop('thickness'),
-      miterLimit: regl.prop('miterLimit'),
-      adjustProjectedThickness: function (params, context) {
-        return context.adjustProjectedThickness === true ? 1 : 0
-      },
-      model: regl.prop('model'),
-      tint: regl.prop('tint')
-    };
-    var count = function () {
-      return state.cursor.quad * 6
+      fill: {}
     };
 
-    var defaultDrawArgs = {
-      vert: line.vert,
-      frag: line.frag,
-      uniforms: uniforms,
-      attributes: attributes,
-      elements: resources.elements.buffer,
-      count: count,
-      depth: {
-        enable: true
-      },
-      cull: {
-        enable: true,
-        face: 'back'
-      },
-      blend: {
-        enable: true,
-        equation: 'add',
-        func: {
-          src: 'src alpha',
-          dst: 'one minus src alpha'
-        }
+    var depth = {
+      enable: false
+    };
+    var cull = {
+      enable: true,
+      face: 'back'
+    };
+    var blend = {
+      enable: true,
+      equation: 'add',
+      func: {
+        src: 'src alpha',
+        dst: 'one minus src alpha'
       }
     };
-    var drawArgs = opts.drawArgs
-      ? this.combineDrawArgs(defaultDrawArgs, opts.drawArgs)
-      : defaultDrawArgs;
+
+    var drawArgs = {
+      uniforms: {
+        model: regl.prop('model'),
+        tint: regl.prop('tint')
+      }
+    };
+
+    var defaultLineDrawArgs = {
+      vert: line.vert,
+      frag: line.frag,
+      uniforms: uniforms.line,
+      attributes: attributes.line,
+      elements: resources.elements.buffer,
+      count: function () {
+        return state.cursor.quad * 6
+      },
+      depth: depth,
+      cull: cull,
+      blend: blend
+    };
+    var drawLineArgs = opts.drawLineArgs
+      ? this.combineDrawArgs(defaultLineDrawArgs, opts.drawLineArgs)
+      : defaultLineDrawArgs;
+
+    var defaultFillDrawArgs = {
+      vert: fill.vert,
+      frag: fill.frag,
+      uniforms: uniforms.fill,
+      attributes: attributes.fill,
+      elements: resources.fillElements.buffer,
+      count: function () {
+        return state.cursor.fillTri * 3
+      },
+      depth: depth,
+      cull: cull,
+      blend: blend
+    };
+    var drawFillArgs = opts.drawFillArgs
+      ? this.combineDrawArgs(defaultFillDrawArgs, opts.drawFillArgs)
+      : defaultFillDrawArgs;
 
     if (state.is3d) {
       var define3d = '#define DIMENSIONS_3\n';
-      drawArgs.vert = define3d + drawArgs.vert;
-      drawArgs.frag = define3d + drawArgs.frag;
+      drawLineArgs.vert = define3d + drawLineArgs.vert;
+      drawLineArgs.frag = define3d + drawLineArgs.frag;
     }
 
     var drawCommand = regl(drawArgs);
+    var drawLineCommand = regl(drawLineArgs);
+    var drawFillCommand = regl(drawFillArgs);
 
     return function (params) {
       if (state.sync.vertex < state.cursor.vertex) {
         this.syncResourceBuffers();
         state.sync.vertex = state.cursor.vertex;
       }
-      return drawCommand(params)
+      return drawCommand(params, function () {
+        drawFillCommand(params);
+        drawLineCommand(params);
+      })
     }.bind(this)
   },
 
   syncResourceBuffers: function () {
     var resources = this.resources;
+
     var position = resources.position;
     var offset = resources.offset;
     var color = resources.color;
     var ud = resources.ud;
     var elements = resources.elements;
 
+    var fillPosition = resources.fillPosition;
+    var fillColor = resources.fillColor;
+    var fillElements = resources.fillElements;
+
     position.buffer.subdata(position.view);
     offset.buffer.subdata(offset.view);
     color.buffer.subdata(color.view);
     ud.buffer.subdata(ud.view);
     elements.buffer.subdata(elements.view);
+
+    fillPosition.buffer.subdata(fillPosition.view);
+    fillColor.buffer.subdata(fillColor.view);
+    fillElements.buffer.subdata(fillElements.view);
   },
 
   getContext: function (type_) {
@@ -352,21 +481,11 @@ inherit(null, LineBuilder, {
     var nextViews = this.createResourceViews(size, cursor.dimensions);
 
     cursor.max = size;
-    resources.position.view = nextViews.position;
-    resources.position.buffer({
-      data: nextViews.position });
-    resources.offset.view = nextViews.offset;
-    resources.offset.buffer({
-      data: nextViews.offset });
-    resources.color.view = nextViews.color;
-    resources.color.buffer({
-      data: nextViews.color });
-    resources.ud.view = nextViews.ud;
-    resources.ud.buffer({
-      data: nextViews.ud });
-    resources.elements.view = nextViews.elements;
-    resources.elements.buffer({
-      data: nextViews.elements });
+    Object.keys(nextViews).forEach(function (key) {
+      resources[key].view = nextViews[key];
+      resources[key].buffer({
+        data: nextViews[key] });
+    });
   },
 
   reset: function () {
@@ -377,9 +496,12 @@ inherit(null, LineBuilder, {
     var style = state.style;
     var transform = state.transform;
 
-    cursor.quad = 0;
-    cursor.element = 0;
     cursor.vertex = 0;
+    cursor.element = 0;
+    cursor.quad = 0;
+    cursor.fillVertex = 0;
+    cursor.fillElement = 0;
+    cursor.fillTri = 0;
     sync.vertex = 0;
 
     style.lineWidth = 1;
@@ -444,12 +566,10 @@ inherit(null, LineBuilder, {
     var activePath = state.activePath;
     var offset = !activePath ? 0
       : activePath.offset + activePath.count;
-
     var nextPath = state.scratchPath;
+
+    nextPath.reset();
     nextPath.offset = offset;
-    nextPath.count = 0;
-    nextPath.totalLength = 0;
-    nextPath.isClosed = false;
 
     state.activePath = nextPath;
   },
@@ -526,11 +646,12 @@ inherit(null, LineBuilder, {
     colorView[bia] = colorView[bia + 4] = color[3];
 
     vec2.copy(prevPosition, pos);
-    activePath.count += 1;
+    activePath.addPoint(pos);
+
     cursor.vertex += 2;
   },
 
-  lineTo: function (x, y, z_) {
+  lineTo: function (x, y, z_, isClosing_) {
     var z = z_ || 0;
 
     var state = this.state;
@@ -595,7 +716,8 @@ inherit(null, LineBuilder, {
     elementsView[evi + 5] = dio;
 
     vec2.copy(prevPosition, pos);
-    activePath.count += 1;
+    activePath.addPoint(pos);
+
     cursor.quad += 1;
     cursor.element += 2;
     cursor.vertex += 1;
@@ -712,6 +834,58 @@ inherit(null, LineBuilder, {
     this.stroke();
   },
 
+  fill: function () {
+    var state = this.state;
+    var cursor = state.cursor;
+    var activePath = state.activePath;
+    var color = state.style.fillColor;
+
+    var resources = this.resources;
+    var fillPositionView = resources.fillPosition.view;
+    var fillColorView = resources.fillColor.view;
+    var fillElementsView = resources.fillElements.view;
+
+    var points = activePath.points;
+    var pointCount = activePath.count + (activePath.isClosed ? -1 : 0);
+    var flatPoints = new Float32Array(pointCount * 2);
+
+    var fvi = cursor.fillVertex;
+    var fvi2 = fvi * 2;
+    var fvi4 = fvi * 4;
+    var fti = cursor.fillTri * 3;
+
+    for (var i = 0; i < pointCount; i++) {
+      var point = points[i];
+
+      var ix = i * 2;
+      var iy = ix + 1;
+      fillPositionView[fvi2 + ix] = flatPoints[ix] = point[0];
+      fillPositionView[fvi2 + iy] = flatPoints[iy] = point[1];
+
+      var ir = i * 4;
+      var ig = ir + 1;
+      var ib = ir + 2;
+      var ia = ir + 3;
+      fillColorView[fvi4 + ir] = color[0];
+      fillColorView[fvi4 + ig] = color[1];
+      fillColorView[fvi4 + ib] = color[2];
+      fillColorView[fvi4 + ia] = color[3];
+    }
+
+    var pointElements = triangulate(flatPoints);
+    var pointTris = pointElements.length / 3;
+
+    for (var j = 0; j < pointTris; j++) {
+      var evi = j * 3;
+      fillElementsView[fti + evi + 0] = fvi + pointElements[evi + 0];
+      fillElementsView[fti + evi + 1] = fvi + pointElements[evi + 1];
+      fillElementsView[fti + evi + 2] = fvi + pointElements[evi + 2];
+    }
+
+    cursor.fillVertex += pointCount;
+    cursor.fillTri += pointTris;
+  },
+
   methods2d: {
     setTransform: function (a, b, c, d, dx, dy) {
       var transform = this.state.transform;
@@ -810,6 +984,7 @@ inherit(null, LineBuilder, {
         },
         set: function (globalAlpha) {
           state.style.color[3] = globalAlpha;
+          state.style.fillColor[3] = globalAlpha;
           return globalAlpha
         }
       }
@@ -825,6 +1000,20 @@ inherit(null, LineBuilder, {
           setRGB(color, strokeStyle);
           state.style.strokeStyle = strokeStyle;
           return strokeStyle
+        }
+      }
+    },
+
+    fillStyle: function (state) {
+      return {
+        get: function () {
+          return state.style.fillStyle
+        },
+        set: function (fillStyle) {
+          var color = state.style.fillColor;
+          setRGB(color, fillStyle);
+          state.style.fillStyle = fillStyle;
+          return fillStyle
         }
       }
     }
