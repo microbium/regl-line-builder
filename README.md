@@ -96,10 +96,10 @@ npm install regl-line-builder --save
 
 [stability-url]: https://nodejs.org/api/documentation.html#documentation_stability_index
 [stability-image]: https://img.shields.io/badge/stability-experimental-orange.svg?style=flat-square
-[travis-url]: https://travis-ci.org/jpweeks/regl-line-builder
-[travis-image]: https://img.shields.io/travis/jpweeks/regl-line-builder/master.svg?style=flat-square
+[travis-url]: https://travis-ci.org/microbium/regl-line-builder
+[travis-image]: https://travis-ci.org/microbium/regl-line-builder.svg?branch=master
 [style-url]: https://standardjs.com
 [style-image]: https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square
-[size-image]: https://badge-size.herokuapp.com/jpweeks/regl-line-builder/master/dist/regl-line-builder.min.js.svg?compression=gzip&style=flat-square
+[size-image]: https://badge-size.herokuapp.com/microbium/regl-line-builder/master/dist/regl-line-builder.min.js.svg?compression=gzip&style=flat-square
 [pretty-face-url]: https://codesandbox.io/s/l4knkv8jkl
 [pretty-face-image]: ./assets/images/pretty-face.png
