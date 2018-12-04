@@ -17,3 +17,4 @@
 - [ ] Investigate memory optimizations for line start / end position duplication.
 - [ ] Add parameter for configuring segment precision (for `arc`).
 - [ ] Fix UV coordinates for skewed/mitered edges.
+- [ ] Allow creating a `fill` without a `stroke`.
