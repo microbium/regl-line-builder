@@ -70,7 +70,7 @@
 
   var frag = "precision highp float;\n#define GLSLIFY 1\nuniform vec4 tint;\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  gl_FragColor = vColor * tint;\n}\n";
 
-  var vert = "precision highp float;\n#define GLSLIFY 1\n\n// Based on WebGL lines demo\n// (c) 2015 Matt DesLauriers. MIT License\n// https://github.com/mattdesl/webgl-lines/\n\n// TODO: Maybe make separate package to make reuse with custom shaders easier?\n// TODO: Maybe use struct to pass some of this data?\nvec2 computeMiterOffset (\n  mat4 projection_0,\n  int adjustProjectedThickness_0,\n  float aspect_0,\n  float thickness_0,\n  float miterLimit_0,\n  vec4 prevProjected_0,\n  vec4 currProjected_0,\n  vec4 nextProjected_0\n) {\n  vec2 aspectVec = vec2(aspect_0, 1.0);\n\n  // get 2D screen space with W divide and aspect correction\n  vec2 prevScreen = prevProjected_0.xy / prevProjected_0.w * aspectVec;\n  vec2 currScreen = currProjected_0.xy / currProjected_0.w * aspectVec;\n  vec2 nextScreen = nextProjected_0.xy / nextProjected_0.w * aspectVec;\n\n  float thicknessScale = 1.0;\n  if (adjustProjectedThickness_0 == 1) {\n    vec4 singlePixelProjected = projection_0 * vec4(2.0, 0.0, 0.0, 1.0);\n    vec2 singlePixel = singlePixelProjected.xy / singlePixelProjected.w * aspectVec;\n    thicknessScale = singlePixel.x;\n  }\n\n  vec2 dir = vec2(0.0);\n  float len = thickness_0 * thicknessScale;\n\n  // OPTIM: Improve equality checks\n  // starting point uses (next - current)\n  if (currScreen == prevScreen) {\n    dir = normalize(nextScreen - currScreen);\n  }\n  // ending point uses (current - previous)\n  else if (currScreen == nextScreen) {\n    dir = normalize(currScreen - prevScreen);\n  }\n  // somewhere in middle, needs a join\n  else {\n    // get directions from (C - B) and (B - A)\n    vec2 dirA = normalize((currScreen - prevScreen));\n    if (int(miterLimit_0) == -1) {\n      dir = dirA;\n    } else {\n      vec2 dirB = normalize((nextScreen - currScreen));\n      // now compute the miter join normal and length\n      vec2 tangent = normalize(dirA + dirB);\n      vec2 perp = vec2(-dirA.y, dirA.x);\n      vec2 miter = vec2(-tangent.y, tangent.x);\n      dir = tangent;\n      len /= dot(miter, perp);\n    }\n  }\n\n  return vec2(-dir.y, dir.x) *\n    clamp(len, 0.0, miterLimit_0 * thicknessScale) / aspectVec;\n}\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\nuniform float aspect;\nuniform int adjustProjectedThickness;\n\nuniform float thickness;\nuniform float miterLimit;\n\n#ifdef DIMENSIONS_3\nattribute vec3 prevPosition;\nattribute vec3 currPosition;\nattribute vec3 nextPosition;\n#else\nattribute vec2 prevPosition;\nattribute vec2 currPosition;\nattribute vec2 nextPosition;\n#endif\n\nattribute float offset;\nattribute vec4 color;\nattribute vec2 ud;\n\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n\n#ifdef DIMENSIONS_3\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 1.0);\n#else\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 0.0, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 0.0, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);\n#endif\n\n  vec2 miterOffset = computeMiterOffset(\n    projection, adjustProjectedThickness,\n    aspect, thickness, miterLimit,\n    prevProjected, currProjected, nextProjected);\n\n  vColor = color;\n  vUD = ud;\n\n  gl_Position = currProjected + vec4(miterOffset * offset, 0.0, 1.0);\n}\n";
+  var vert = "precision highp float;\n#define GLSLIFY 1\n\n// Based on WebGL lines demo\n// (c) 2015 Matt DesLauriers. MIT License\n// https://github.com/mattdesl/webgl-lines/\n\n// TODO: Maybe make separate package to make reuse with custom shaders easier?\n// TODO: Maybe use struct to pass some of this data?\nvec2 computeMiterOffset (\n  mat4 projection_0,\n  int adjustProjectedThickness_0,\n  float aspect_0,\n  float thickness_0,\n  float miterLimit_0,\n  float prevId_0,\n  float currId_0,\n  float nextId_0,\n  vec4 prevProjected_0,\n  vec4 currProjected_0,\n  vec4 nextProjected_0\n) {\n  vec2 aspectVec = vec2(aspect_0, 1.0);\n\n  // get 2D screen space with W divide and aspect correction\n  vec2 prevScreen = prevProjected_0.xy / prevProjected_0.w * aspectVec;\n  vec2 currScreen = currProjected_0.xy / currProjected_0.w * aspectVec;\n  vec2 nextScreen = nextProjected_0.xy / nextProjected_0.w * aspectVec;\n\n  float thicknessScale = 1.0;\n  if (adjustProjectedThickness_0 == 1) {\n    vec4 singlePixelProjected = projection_0 * vec4(2.0, 0.0, 0.0, 1.0);\n    vec2 singlePixel = singlePixelProjected.xy / singlePixelProjected.w * aspectVec;\n    thicknessScale = singlePixel.x;\n  }\n\n  vec2 dir = vec2(0.0);\n  float len = thickness_0 * thicknessScale;\n\n  // starting point uses (next - current)\n  if (currId_0 > prevId_0) {\n    dir = normalize(nextScreen - currScreen);\n  }\n  // ending point uses (current - previous)\n  else if (currId_0 < nextId_0) {\n    dir = normalize(currScreen - prevScreen);\n  }\n  // somewhere in middle, needs a join\n  else {\n    // get directions from (C - B) and (B - A)\n    vec2 dirA = normalize((currScreen - prevScreen));\n    if (int(miterLimit_0) == -1) {\n      dir = dirA;\n    } else {\n      vec2 dirB = normalize((nextScreen - currScreen));\n      // now compute the miter join normal and length\n      vec2 tangent = normalize(dirA + dirB);\n      vec2 perp = vec2(-dirA.y, dirA.x);\n      vec2 miter = vec2(-tangent.y, tangent.x);\n      dir = tangent;\n      len /= dot(miter, perp);\n    }\n  }\n\n  return vec2(-dir.y, dir.x) *\n    clamp(len, 0.0, miterLimit_0 * thicknessScale) / aspectVec;\n}\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\nuniform float aspect;\nuniform int adjustProjectedThickness;\n\nuniform float thickness;\nuniform float miterLimit;\n\n#ifdef DIMENSIONS_3\nattribute vec3 prevPosition;\nattribute vec3 currPosition;\nattribute vec3 nextPosition;\n#else\nattribute vec2 prevPosition;\nattribute vec2 currPosition;\nattribute vec2 nextPosition;\n#endif\n\nattribute float prevId;\nattribute float currId;\nattribute float nextId;\n\nattribute float offset;\nattribute vec4 color;\nattribute vec2 ud;\n\nvarying vec4 vColor;\nvarying vec2 vUD;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n\n#ifdef DIMENSIONS_3\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 1.0);\n#else\n  vec4 prevProjected = projViewModel * vec4(prevPosition, 0.0, 1.0);\n  vec4 currProjected = projViewModel * vec4(currPosition, 0.0, 1.0);\n  vec4 nextProjected = projViewModel * vec4(nextPosition, 0.0, 1.0);\n#endif\n\n  vec2 miterOffset = computeMiterOffset(\n    projection, adjustProjectedThickness,\n    aspect, thickness, miterLimit,\n    prevId, currId, nextId,\n    prevProjected, currProjected, nextProjected);\n\n  vColor = color;\n  vUD = ud;\n\n  gl_Position = currProjected + vec4(miterOffset * offset, 0.0, 1.0);\n}\n";
 
   var line = {
     frag: frag,
@@ -79,7 +79,7 @@
 
   var frag$1 = "precision highp float;\n#define GLSLIFY 1\nuniform vec4 tint;\nvarying vec4 vColor;\n\nvoid main() {\n  gl_FragColor = vColor * tint;\n}\n";
 
-  var vert$1 = "precision highp float;\n#define GLSLIFY 1\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\n\n// #ifdef DIMENSIONS_3\n// attribute vec3 position;\n// #else\nattribute vec2 position;\n// #endif\n\nattribute vec4 color;\n\nvarying vec4 vColor;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n  vec4 posProjected = projViewModel * vec4(position, 0.0, 1.0);\n\n  vColor = color;\n\n  gl_Position = posProjected * vec4(0.5, 0.5, 0.0, 1.0);\n}\n";
+  var vert$1 = "precision highp float;\n#define GLSLIFY 1\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\n\n// #ifdef DIMENSIONS_3\n// attribute vec3 position;\n// #else\nattribute vec2 position;\n// #endif\n\nattribute vec4 color;\nattribute float id;\n\nvarying vec4 vColor;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n  vec4 posProjected = projViewModel * vec4(position, 0.0, 1.0);\n\n  vColor = color;\n\n  gl_Position = posProjected * vec4(0.5, 0.5, 0.0, 1.0);\n}\n";
 
   var fill = {
     frag: frag$1,
@@ -167,6 +167,7 @@
         activePath: null,
         prevPosition: glMatrix.vec3.create(),
         saveStack: [],
+        pathCount: 0,
         scratchPath: LinePath.create({
           dimensions: opts.dimensions
         })
@@ -199,6 +200,11 @@
         type: 'float',
         data: views.ud
       });
+      var idBuffer = regl.buffer({
+        usage: 'dynamic',
+        type: 'float',
+        data: views.id
+      });
       var elementsBuffer = regl.elements({
         usage: 'dynamic',
         primitive: 'triangles',
@@ -214,6 +220,11 @@
         usage: 'dynamic',
         type: 'float',
         data: views.fillColor
+      });
+      var fillIdBuffer = regl.buffer({
+        usage: 'dynamic',
+        type: 'float',
+        data: views.fillId
       });
       var fillElementsBuffer = regl.elements({
         usage: 'dynamic',
@@ -238,6 +249,10 @@
           view: views.ud,
           buffer: udBuffer
         },
+        id: {
+          view: views.id,
+          buffer: idBuffer
+        },
         elements: {
           view: views.elements,
           buffer: elementsBuffer
@@ -250,6 +265,10 @@
           view: views.fillColor,
           buffer: fillColorBuffer
         },
+        fillId: {
+          view: views.fillId,
+          buffer: fillIdBuffer
+        },
         fillElements: {
           view: views.fillElements,
           buffer: fillElementsBuffer
@@ -260,13 +279,15 @@
     createResourceViews: function (size, dimensions) {
       var ElementsArrayCtor = this.getElementsCtor(size);
       return {
-        position: new Float32Array(size * dimensions * 2),
+        position: new Float32Array(size * 2 * dimensions),
         offset: new Float32Array(size * 2),
-        color: new Float32Array(size * 4 * 2),
-        ud: new Float32Array(size * 2 * 3),
+        color: new Float32Array(size * 2 * 4),
+        ud: new Float32Array(size * 2 * 2),
+        id: new Float32Array(size * 2 * 1),
         elements: new ElementsArrayCtor(size * 4),
         fillPosition: new Float32Array(size * dimensions),
         fillColor: new Float32Array(size * 4),
+        fillId: new Float32Array(size * 1),
         fillElements: new ElementsArrayCtor(size * 3)
       }
     },
@@ -290,10 +311,12 @@
       var position = resources.position;
       var color = resources.color;
       var ud = resources.ud;
+      var id = resources.id;
       var offset = resources.offset;
 
       var fillPosition = resources.fillPosition;
       var fillColor = resources.fillColor;
+      var fillId = resources.fillId;
 
       return {
         line: {
@@ -312,13 +335,29 @@
             offset: FLOAT_BYTES * dimensions * 4,
             stride: FLOAT_BYTES * dimensions
           },
+          prevId: {
+            buffer: id.buffer,
+            offset: 0,
+            stride: FLOAT_BYTES
+          },
+          currId: {
+            buffer: id.buffer,
+            offset: FLOAT_BYTES * 2,
+            stride: FLOAT_BYTES
+          },
+          nextId: {
+            buffer: id.buffer,
+            offset: FLOAT_BYTES * 4,
+            stride: FLOAT_BYTES
+          },
           offset: offset.buffer,
           ud: ud.buffer,
           color: color.buffer
         },
         fill: {
           position: fillPosition.buffer,
-          color: fillColor.buffer
+          color: fillColor.buffer,
+          id: fillId.buffer
         }
       }
     },
@@ -441,20 +480,24 @@
       var offset = resources.offset;
       var color = resources.color;
       var ud = resources.ud;
+      var id = resources.id;
       var elements = resources.elements;
 
       var fillPosition = resources.fillPosition;
       var fillColor = resources.fillColor;
+      var fillId = resources.fillId;
       var fillElements = resources.fillElements;
 
       position.buffer.subdata(position.view);
       offset.buffer.subdata(offset.view);
       color.buffer.subdata(color.view);
       ud.buffer.subdata(ud.view);
+      id.buffer.subdata(id.view);
       elements.buffer.subdata(elements.view);
 
       fillPosition.buffer.subdata(fillPosition.view);
       fillColor.buffer.subdata(fillColor.view);
+      fillId.buffer.subdata(fillId.view);
       fillElements.buffer.subdata(fillElements.view);
     },
 
@@ -520,6 +563,7 @@
       else glMatrix.mat2d.identity(transform.matrix);
 
       state.activePath = null;
+      state.pathCount = 0;
       state.saveStack.length = 0;
     },
 
@@ -589,6 +633,7 @@
 
       var cursor = state.cursor;
       var dimensions = cursor.dimensions;
+      var id = ++state.pathCount;
       var color = state.style.color;
       var lineWidth = state.style.lineWidth * 0.5;
 
@@ -596,6 +641,7 @@
       var positionView = resources.position.view;
       var offsetView = resources.offset.view;
       var udView = resources.ud.view;
+      var idView = resources.id.view;
       var colorView = resources.color.view;
 
       var pos = this.transformInput(x, y, z);
@@ -633,6 +679,11 @@
       udView[aid] = udView[aid + 2] = 0;
       udView[bid] = udView[bid + 2] = 0;
 
+      var aii = cursor.vertex * 2;
+      var bii = (cursor.vertex + 1) * 2;
+      idView[aii] = idView[aii + 1] = id - 1;
+      idView[bii] = idView[bii + 1] = id;
+
       var air = cursor.vertex * 4 * 2;
       var aig = air + 1;
       var aib = air + 2;
@@ -666,6 +717,7 @@
 
       var cursor = state.cursor;
       var dimensions = cursor.dimensions;
+      var id = state.pathCount;
       var color = state.style.color;
       var lineWidth = state.style.lineWidth * 0.5;
 
@@ -674,6 +726,7 @@
       var offsetView = resources.offset.view;
       var colorView = resources.color.view;
       var udView = resources.ud.view;
+      var idView = resources.id.view;
       var elementsView = resources.elements.view;
 
       var pos = this.transformInput(x, y, z);
@@ -698,6 +751,9 @@
       udView[aiu] = 1;
       udView[aiu + 2] = -1;
       udView[aid] = udView[aid + 2] = totalLength;
+
+      var aii = cursor.vertex * 2;
+      idView[aii] = idView[aii + 1] = id;
 
       var air = cursor.vertex * 4 * 2;
       var aig = air + 1;
@@ -771,11 +827,13 @@
       var is3d = state.is3d;
       var cursor = state.cursor;
       var dimensions = cursor.dimensions;
+      var id = state.pathCount;
 
       var resources = this.resources;
       var positionView = resources.position.view;
       var offsetView = resources.offset.view;
       var udView = resources.ud.view;
+      var idView = resources.id.view;
       var colorView = resources.color.view;
 
       var si = cursor.vertex - activePath.count;
@@ -806,6 +864,9 @@
       udView[aiu] = 1;
       udView[aiu + 2] = -1;
       udView[aid] = udView[aid + 2] = udView[bid];
+
+      var aii = cursor.vertex * 2;
+      idView[aii] = idView[aii + 1] = id + 1;
 
       var bir = bi * 4 * 2;
       var big = bir + 1;
@@ -843,11 +904,13 @@
       var state = this.state;
       var cursor = state.cursor;
       var activePath = state.activePath;
+      var id = state.pathCount;
       var color = state.style.fillColor;
 
       var resources = this.resources;
       var fillPositionView = resources.fillPosition.view;
       var fillColorView = resources.fillColor.view;
+      var fillIdView = resources.fillId.view;
       var fillElementsView = resources.fillElements.view;
 
       var points = activePath.points;
@@ -866,6 +929,9 @@
         var iy = ix + 1;
         fillPositionView[fvi2 + ix] = flatPoints[ix] = point[0];
         fillPositionView[fvi2 + iy] = flatPoints[iy] = point[1];
+
+        var ii = i;
+        fillIdView[fvi + ii] = id;
 
         var ir = i * 4;
         var ig = ir + 1;
@@ -1057,6 +1123,7 @@
 
       var resources = this.resources;
       var positionView = resources.position.view;
+      var idView = resources.id.view;
 
       var aix = ai * dimensions * 2;
       var aiy = aix + 1;
@@ -1070,6 +1137,10 @@
         var biz = bix + 2;
         positionView[aiz] = positionView[aiz + dimensions] = positionView[biz];
       }
+
+      var aii = ai * 2;
+      var bii = bi * 2;
+      idView[aii] = idView[aii + 1] = idView[bii];
     }
   });
 
