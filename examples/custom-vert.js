@@ -30,7 +30,7 @@ const stats = new Stats()
 
 const lines = LineBuilder.create(regl, {
   bufferSize: 300,
-  drawArgs: {
+  drawLineArgs: {
     vert: vertShader
   }
 })
@@ -44,7 +44,7 @@ ctx.strokeRect(-500, -700, 1000, 1400)
 regl.frame(({ tick }) => {
   const { sin } = Math
   const t0 = sin(tick * 0.1) * 0.5 + 0.5
-  const t1 = sin(tick * 0.05)
+  const t1 = sin(tick * 0.025)
 
   stats('frame').start()
   stats('fps').frame()
