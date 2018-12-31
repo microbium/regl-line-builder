@@ -89,6 +89,7 @@ inherit(null, LineBuilder, {
       activePath: null,
       prevPosition: vec3.create(),
       saveStack: [],
+      pathCount: 0,
       scratchPath: LinePath.create({
         dimensions: opts.dimensions
       })
@@ -120,6 +121,11 @@ inherit(null, LineBuilder, {
       usage: 'dynamic',
       type: 'float',
       data: views.ud
+    })
+    var idBuffer = regl.buffer({
+      usage: 'dynamic',
+      type: 'float',
+      data: views.id
     })
     var elementsBuffer = regl.elements({
       usage: 'dynamic',
@@ -160,6 +166,10 @@ inherit(null, LineBuilder, {
         view: views.ud,
         buffer: udBuffer
       },
+      id: {
+        view: views.id,
+        buffer: idBuffer
+      },
       elements: {
         view: views.elements,
         buffer: elementsBuffer
@@ -183,10 +193,11 @@ inherit(null, LineBuilder, {
   createResourceViews: function (size, dimensions) {
     var ElementsArrayCtor = this.getElementsCtor(size)
     return {
-      position: new Float32Array(size * dimensions * 2),
+      position: new Float32Array(size * 2 * dimensions),
       offset: new Float32Array(size * 2),
-      color: new Float32Array(size * 4 * 2),
-      ud: new Float32Array(size * 2 * 3),
+      color: new Float32Array(size * 2 * 4),
+      ud: new Float32Array(size * 2 * 2),
+      id: new Float32Array(size * 2 * 1),
       elements: new ElementsArrayCtor(size * 4),
       fillPosition: new Float32Array(size * dimensions),
       fillColor: new Float32Array(size * 4),
@@ -213,6 +224,7 @@ inherit(null, LineBuilder, {
     var position = resources.position
     var color = resources.color
     var ud = resources.ud
+    var id = resources.id
     var offset = resources.offset
 
     var fillPosition = resources.fillPosition
@@ -234,6 +246,21 @@ inherit(null, LineBuilder, {
           buffer: position.buffer,
           offset: FLOAT_BYTES * dimensions * 4,
           stride: FLOAT_BYTES * dimensions
+        },
+        prevId: {
+          buffer: id.buffer,
+          offset: 0,
+          stride: FLOAT_BYTES
+        },
+        currId: {
+          buffer: id.buffer,
+          offset: FLOAT_BYTES * 2,
+          stride: FLOAT_BYTES
+        },
+        nextId: {
+          buffer: id.buffer,
+          offset: FLOAT_BYTES * 4,
+          stride: FLOAT_BYTES
         },
         offset: offset.buffer,
         ud: ud.buffer,
@@ -365,6 +392,7 @@ inherit(null, LineBuilder, {
     var offset = resources.offset
     var color = resources.color
     var ud = resources.ud
+    var id = resources.id
     var elements = resources.elements
 
     var fillPosition = resources.fillPosition
@@ -376,6 +404,7 @@ inherit(null, LineBuilder, {
     offset.buffer.subdata(offset.view)
     color.buffer.subdata(color.view)
     ud.buffer.subdata(ud.view)
+    id.buffer.subdata(id.view)
     elements.buffer.subdata(elements.view)
 
     fillPosition.buffer.subdata(fillPosition.view)
@@ -525,6 +554,7 @@ inherit(null, LineBuilder, {
 
     var cursor = state.cursor
     var dimensions = cursor.dimensions
+    var id = state.pathCount + 1
     var color = state.style.color
     var lineWidth = state.style.lineWidth * 0.5
 
@@ -532,6 +562,7 @@ inherit(null, LineBuilder, {
     var positionView = resources.position.view
     var offsetView = resources.offset.view
     var udView = resources.ud.view
+    var idView = resources.id.view
     var colorView = resources.color.view
 
     var pos = this.transformInput(x, y, z)
@@ -569,6 +600,11 @@ inherit(null, LineBuilder, {
     udView[aid] = udView[aid + 2] = 0
     udView[bid] = udView[bid + 2] = 0
 
+    var aii = cursor.vertex * 2
+    var bii = (cursor.vertex + 1) * 2
+    idView[aii] = idView[aii + 1] = id - 1
+    idView[bii] = idView[bii + 1] = id
+
     var air = cursor.vertex * 4 * 2
     var aig = air + 1
     var aib = air + 2
@@ -602,6 +638,7 @@ inherit(null, LineBuilder, {
 
     var cursor = state.cursor
     var dimensions = cursor.dimensions
+    var id = state.pathCount + 1
     var color = state.style.color
     var lineWidth = state.style.lineWidth * 0.5
 
@@ -610,6 +647,7 @@ inherit(null, LineBuilder, {
     var offsetView = resources.offset.view
     var colorView = resources.color.view
     var udView = resources.ud.view
+    var idView = resources.id.view
     var elementsView = resources.elements.view
 
     var pos = this.transformInput(x, y, z)
@@ -635,6 +673,9 @@ inherit(null, LineBuilder, {
     udView[aiu] = 1
     udView[aiu + 2] = -1
     udView[aid] = udView[aid + 2] = totalLength
+
+    var aii = cursor.vertex * 2
+    idView[aii] = idView[aii + 1] = id
 
     var air = cursor.vertex * 4 * 2
     var aig = air + 1
@@ -711,11 +752,13 @@ inherit(null, LineBuilder, {
     var is3d = state.is3d
     var cursor = state.cursor
     var dimensions = cursor.dimensions
+    var id = state.pathCount + 1
 
     var resources = this.resources
     var positionView = resources.position.view
     var offsetView = resources.offset.view
     var udView = resources.ud.view
+    var idView = resources.id.view
     var colorView = resources.color.view
 
     var si = cursor.vertex - activePath.count
@@ -747,6 +790,9 @@ inherit(null, LineBuilder, {
     udView[aiu + 2] = -1
     udView[aid] = udView[aid + 2] = udView[bid]
 
+    var aii = cursor.vertex * 2
+    idView[aii] = idView[aii + 1] = id + 1
+
     var bir = bi * 4 * 2
     var big = bir + 1
     var bib = bir + 2
@@ -762,6 +808,7 @@ inherit(null, LineBuilder, {
 
     cursor.element += 6
     cursor.vertex += 1
+    state.pathCount += 1
 
     if (activePath.isClosed) {
       this.copyPosition(si - 1, bi - 1)
