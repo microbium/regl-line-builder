@@ -143,6 +143,11 @@ inherit(null, LineBuilder, {
       type: 'float',
       data: views.fillColor
     })
+    var fillIdBuffer = regl.buffer({
+      usage: 'dynamic',
+      type: 'float',
+      data: views.fillId
+    })
     var fillElementsBuffer = regl.elements({
       usage: 'dynamic',
       primitive: 'triangles',
@@ -182,6 +187,10 @@ inherit(null, LineBuilder, {
         view: views.fillColor,
         buffer: fillColorBuffer
       },
+      fillId: {
+        view: views.fillId,
+        buffer: fillIdBuffer
+      },
       fillElements: {
         view: views.fillElements,
         buffer: fillElementsBuffer
@@ -201,6 +210,7 @@ inherit(null, LineBuilder, {
       elements: new ElementsArrayCtor(size * 4),
       fillPosition: new Float32Array(size * dimensions),
       fillColor: new Float32Array(size * 4),
+      fillId: new Float32Array(size * 1),
       fillElements: new ElementsArrayCtor(size * 3) // fill elements size?
     }
   },
@@ -229,6 +239,7 @@ inherit(null, LineBuilder, {
 
     var fillPosition = resources.fillPosition
     var fillColor = resources.fillColor
+    var fillId = resources.fillId
 
     return {
       line: {
@@ -268,7 +279,8 @@ inherit(null, LineBuilder, {
       },
       fill: {
         position: fillPosition.buffer,
-        color: fillColor.buffer
+        color: fillColor.buffer,
+        id: fillId.buffer
       }
     }
   },
@@ -397,6 +409,7 @@ inherit(null, LineBuilder, {
 
     var fillPosition = resources.fillPosition
     var fillColor = resources.fillColor
+    var fillId = resources.fillId
     var fillElements = resources.fillElements
 
     // TODO: Use cursor position to subdata at byte offset
@@ -409,6 +422,7 @@ inherit(null, LineBuilder, {
 
     fillPosition.buffer.subdata(fillPosition.view)
     fillColor.buffer.subdata(fillColor.view)
+    fillId.buffer.subdata(fillId.view)
     fillElements.buffer.subdata(fillElements.view)
   },
 
@@ -474,6 +488,7 @@ inherit(null, LineBuilder, {
     else mat2d.identity(transform.matrix)
 
     state.activePath = null
+    state.pathCount = 0
     state.saveStack.length = 0
   },
 
@@ -554,7 +569,7 @@ inherit(null, LineBuilder, {
 
     var cursor = state.cursor
     var dimensions = cursor.dimensions
-    var id = state.pathCount + 1
+    var id = ++state.pathCount
     var color = state.style.color
     var lineWidth = state.style.lineWidth * 0.5
 
@@ -638,7 +653,7 @@ inherit(null, LineBuilder, {
 
     var cursor = state.cursor
     var dimensions = cursor.dimensions
-    var id = state.pathCount + 1
+    var id = state.pathCount
     var color = state.style.color
     var lineWidth = state.style.lineWidth * 0.5
 
@@ -752,7 +767,7 @@ inherit(null, LineBuilder, {
     var is3d = state.is3d
     var cursor = state.cursor
     var dimensions = cursor.dimensions
-    var id = state.pathCount + 1
+    var id = state.pathCount
 
     var resources = this.resources
     var positionView = resources.position.view
@@ -808,7 +823,6 @@ inherit(null, LineBuilder, {
 
     cursor.element += 6
     cursor.vertex += 1
-    state.pathCount += 1
 
     if (activePath.isClosed) {
       this.copyPosition(si - 1, bi - 1)
@@ -832,11 +846,13 @@ inherit(null, LineBuilder, {
     var state = this.state
     var cursor = state.cursor
     var activePath = state.activePath
+    var id = state.pathCount
     var color = state.style.fillColor
 
     var resources = this.resources
     var fillPositionView = resources.fillPosition.view
     var fillColorView = resources.fillColor.view
+    var fillIdView = resources.fillId.view
     var fillElementsView = resources.fillElements.view
 
     var points = activePath.points
@@ -855,6 +871,9 @@ inherit(null, LineBuilder, {
       var iy = ix + 1
       fillPositionView[fvi2 + ix] = flatPoints[ix] = point[0]
       fillPositionView[fvi2 + iy] = flatPoints[iy] = point[1]
+
+      var ii = i
+      fillIdView[fvi + ii] = id
 
       var ir = i * 4
       var ig = ir + 1
