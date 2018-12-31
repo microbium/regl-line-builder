@@ -1056,6 +1056,7 @@ inherit(null, LineBuilder, {
 
     var resources = this.resources
     var positionView = resources.position.view
+    var idView = resources.id.view
 
     var aix = ai * dimensions * 2
     var aiy = aix + 1
@@ -1069,5 +1070,9 @@ inherit(null, LineBuilder, {
       var biz = bix + 2
       positionView[aiz] = positionView[aiz + dimensions] = positionView[biz]
     }
+
+    var aii = ai * 2
+    var bii = bi * 2
+    idView[aii] = idView[aii + 1] = idView[bii]
   }
 })
