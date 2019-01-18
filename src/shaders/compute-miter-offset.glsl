@@ -10,6 +10,9 @@ vec2 computeMiterOffset (
   float aspect,
   float thickness,
   float miterLimit,
+  float prevId,
+  float currId,
+  float nextId,
   vec4 prevProjected,
   vec4 currProjected,
   vec4 nextProjected
@@ -31,13 +34,12 @@ vec2 computeMiterOffset (
   vec2 dir = vec2(0.0);
   float len = thickness * thicknessScale;
 
-  // OPTIM: Improve equality checks
   // starting point uses (next - current)
-  if (currScreen == prevScreen) {
+  if (currId > prevId) {
     dir = normalize(nextScreen - currScreen);
   }
   // ending point uses (current - previous)
-  else if (currScreen == nextScreen) {
+  else if (currId < nextId) {
     dir = normalize(currScreen - prevScreen);
   }
   // somewhere in middle, needs a join

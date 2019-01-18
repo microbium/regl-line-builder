@@ -21,6 +21,10 @@ attribute vec2 currPosition;
 attribute vec2 nextPosition;
 #endif
 
+attribute float prevId;
+attribute float currId;
+attribute float nextId;
+
 attribute float offset;
 attribute vec4 color;
 attribute vec2 ud;
@@ -44,6 +48,7 @@ void main() {
   vec2 miterOffset = computeMiterOffset(
     projection, adjustProjectedThickness,
     aspect, thickness, miterLimit,
+    prevId, currId, nextId,
     prevProjected, currProjected, nextProjected);
 
   vColor = color;

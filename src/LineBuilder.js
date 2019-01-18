@@ -89,6 +89,7 @@ inherit(null, LineBuilder, {
       activePath: null,
       prevPosition: vec3.create(),
       saveStack: [],
+      pathCount: 0,
       scratchPath: LinePath.create({
         dimensions: opts.dimensions
       })
@@ -121,6 +122,11 @@ inherit(null, LineBuilder, {
       type: 'float',
       data: views.ud
     })
+    var idBuffer = regl.buffer({
+      usage: 'dynamic',
+      type: 'float',
+      data: views.id
+    })
     var elementsBuffer = regl.elements({
       usage: 'dynamic',
       primitive: 'triangles',
@@ -136,6 +142,11 @@ inherit(null, LineBuilder, {
       usage: 'dynamic',
       type: 'float',
       data: views.fillColor
+    })
+    var fillIdBuffer = regl.buffer({
+      usage: 'dynamic',
+      type: 'float',
+      data: views.fillId
     })
     var fillElementsBuffer = regl.elements({
       usage: 'dynamic',
@@ -160,6 +171,10 @@ inherit(null, LineBuilder, {
         view: views.ud,
         buffer: udBuffer
       },
+      id: {
+        view: views.id,
+        buffer: idBuffer
+      },
       elements: {
         view: views.elements,
         buffer: elementsBuffer
@@ -172,6 +187,10 @@ inherit(null, LineBuilder, {
         view: views.fillColor,
         buffer: fillColorBuffer
       },
+      fillId: {
+        view: views.fillId,
+        buffer: fillIdBuffer
+      },
       fillElements: {
         view: views.fillElements,
         buffer: fillElementsBuffer
@@ -183,13 +202,15 @@ inherit(null, LineBuilder, {
   createResourceViews: function (size, dimensions) {
     var ElementsArrayCtor = this.getElementsCtor(size)
     return {
-      position: new Float32Array(size * dimensions * 2),
+      position: new Float32Array(size * 2 * dimensions),
       offset: new Float32Array(size * 2),
-      color: new Float32Array(size * 4 * 2),
-      ud: new Float32Array(size * 2 * 3),
+      color: new Float32Array(size * 2 * 4),
+      ud: new Float32Array(size * 2 * 2),
+      id: new Float32Array(size * 2 * 1),
       elements: new ElementsArrayCtor(size * 4),
       fillPosition: new Float32Array(size * dimensions),
       fillColor: new Float32Array(size * 4),
+      fillId: new Float32Array(size * 1),
       fillElements: new ElementsArrayCtor(size * 3) // fill elements size?
     }
   },
@@ -213,10 +234,12 @@ inherit(null, LineBuilder, {
     var position = resources.position
     var color = resources.color
     var ud = resources.ud
+    var id = resources.id
     var offset = resources.offset
 
     var fillPosition = resources.fillPosition
     var fillColor = resources.fillColor
+    var fillId = resources.fillId
 
     return {
       line: {
@@ -235,13 +258,29 @@ inherit(null, LineBuilder, {
           offset: FLOAT_BYTES * dimensions * 4,
           stride: FLOAT_BYTES * dimensions
         },
+        prevId: {
+          buffer: id.buffer,
+          offset: 0,
+          stride: FLOAT_BYTES
+        },
+        currId: {
+          buffer: id.buffer,
+          offset: FLOAT_BYTES * 2,
+          stride: FLOAT_BYTES
+        },
+        nextId: {
+          buffer: id.buffer,
+          offset: FLOAT_BYTES * 4,
+          stride: FLOAT_BYTES
+        },
         offset: offset.buffer,
         ud: ud.buffer,
         color: color.buffer
       },
       fill: {
         position: fillPosition.buffer,
-        color: fillColor.buffer
+        color: fillColor.buffer,
+        id: fillId.buffer
       }
     }
   },
@@ -365,10 +404,12 @@ inherit(null, LineBuilder, {
     var offset = resources.offset
     var color = resources.color
     var ud = resources.ud
+    var id = resources.id
     var elements = resources.elements
 
     var fillPosition = resources.fillPosition
     var fillColor = resources.fillColor
+    var fillId = resources.fillId
     var fillElements = resources.fillElements
 
     // TODO: Use cursor position to subdata at byte offset
@@ -376,10 +417,12 @@ inherit(null, LineBuilder, {
     offset.buffer.subdata(offset.view)
     color.buffer.subdata(color.view)
     ud.buffer.subdata(ud.view)
+    id.buffer.subdata(id.view)
     elements.buffer.subdata(elements.view)
 
     fillPosition.buffer.subdata(fillPosition.view)
     fillColor.buffer.subdata(fillColor.view)
+    fillId.buffer.subdata(fillId.view)
     fillElements.buffer.subdata(fillElements.view)
   },
 
@@ -445,6 +488,7 @@ inherit(null, LineBuilder, {
     else mat2d.identity(transform.matrix)
 
     state.activePath = null
+    state.pathCount = 0
     state.saveStack.length = 0
   },
 
@@ -525,6 +569,7 @@ inherit(null, LineBuilder, {
 
     var cursor = state.cursor
     var dimensions = cursor.dimensions
+    var id = ++state.pathCount
     var color = state.style.color
     var lineWidth = state.style.lineWidth * 0.5
 
@@ -532,6 +577,7 @@ inherit(null, LineBuilder, {
     var positionView = resources.position.view
     var offsetView = resources.offset.view
     var udView = resources.ud.view
+    var idView = resources.id.view
     var colorView = resources.color.view
 
     var pos = this.transformInput(x, y, z)
@@ -569,6 +615,11 @@ inherit(null, LineBuilder, {
     udView[aid] = udView[aid + 2] = 0
     udView[bid] = udView[bid + 2] = 0
 
+    var aii = cursor.vertex * 2
+    var bii = (cursor.vertex + 1) * 2
+    idView[aii] = idView[aii + 1] = id - 1
+    idView[bii] = idView[bii + 1] = id
+
     var air = cursor.vertex * 4 * 2
     var aig = air + 1
     var aib = air + 2
@@ -602,6 +653,7 @@ inherit(null, LineBuilder, {
 
     var cursor = state.cursor
     var dimensions = cursor.dimensions
+    var id = state.pathCount
     var color = state.style.color
     var lineWidth = state.style.lineWidth * 0.5
 
@@ -610,6 +662,7 @@ inherit(null, LineBuilder, {
     var offsetView = resources.offset.view
     var colorView = resources.color.view
     var udView = resources.ud.view
+    var idView = resources.id.view
     var elementsView = resources.elements.view
 
     var pos = this.transformInput(x, y, z)
@@ -635,6 +688,9 @@ inherit(null, LineBuilder, {
     udView[aiu] = 1
     udView[aiu + 2] = -1
     udView[aid] = udView[aid + 2] = totalLength
+
+    var aii = cursor.vertex * 2
+    idView[aii] = idView[aii + 1] = id
 
     var air = cursor.vertex * 4 * 2
     var aig = air + 1
@@ -711,11 +767,13 @@ inherit(null, LineBuilder, {
     var is3d = state.is3d
     var cursor = state.cursor
     var dimensions = cursor.dimensions
+    var id = state.pathCount
 
     var resources = this.resources
     var positionView = resources.position.view
     var offsetView = resources.offset.view
     var udView = resources.ud.view
+    var idView = resources.id.view
     var colorView = resources.color.view
 
     var si = cursor.vertex - activePath.count
@@ -746,6 +804,9 @@ inherit(null, LineBuilder, {
     udView[aiu] = 1
     udView[aiu + 2] = -1
     udView[aid] = udView[aid + 2] = udView[bid]
+
+    var aii = cursor.vertex * 2
+    idView[aii] = idView[aii + 1] = id + 1
 
     var bir = bi * 4 * 2
     var big = bir + 1
@@ -785,11 +846,13 @@ inherit(null, LineBuilder, {
     var state = this.state
     var cursor = state.cursor
     var activePath = state.activePath
+    var id = state.pathCount
     var color = state.style.fillColor
 
     var resources = this.resources
     var fillPositionView = resources.fillPosition.view
     var fillColorView = resources.fillColor.view
+    var fillIdView = resources.fillId.view
     var fillElementsView = resources.fillElements.view
 
     var points = activePath.points
@@ -808,6 +871,9 @@ inherit(null, LineBuilder, {
       var iy = ix + 1
       fillPositionView[fvi2 + ix] = flatPoints[ix] = point[0]
       fillPositionView[fvi2 + iy] = flatPoints[iy] = point[1]
+
+      var ii = i
+      fillIdView[fvi + ii] = id
 
       var ir = i * 4
       var ig = ir + 1
@@ -1009,6 +1075,7 @@ inherit(null, LineBuilder, {
 
     var resources = this.resources
     var positionView = resources.position.view
+    var idView = resources.id.view
 
     var aix = ai * dimensions * 2
     var aiy = aix + 1
@@ -1022,5 +1089,9 @@ inherit(null, LineBuilder, {
       var biz = bix + 2
       positionView[aiz] = positionView[aiz + dimensions] = positionView[biz]
     }
+
+    var aii = ai * 2
+    var bii = bi * 2
+    idView[aii] = idView[aii + 1] = idView[bii]
   }
 })

@@ -11,6 +11,7 @@ attribute vec2 position;
 // #endif
 
 attribute vec4 color;
+attribute float id;
 
 varying vec4 vColor;
 
