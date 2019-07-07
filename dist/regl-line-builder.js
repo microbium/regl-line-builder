@@ -382,20 +382,26 @@
 
       var uniforms = {
         line: {
+          model: regl.prop('model'),
+          tint: regl.prop('tint'),
           aspect: function (params, context) {
             return params.viewportWidth / params.viewportHeight
           },
           thickness: regl.prop('thickness'),
           miterLimit: regl.prop('miterLimit'),
+
           adjustProjectedThickness: function (params, context) {
             return context.adjustProjectedThickness === true ? 1 : 0
           }
         },
-        fill: {}
+        fill: {
+          model: regl.prop('model'),
+          tint: regl.prop('tint')
+        }
       };
 
       var depth = {
-        enable: false
+        enable: true
       };
       var cull = {
         enable: true,
@@ -407,13 +413,6 @@
         func: {
           src: 'src alpha',
           dst: 'one minus src alpha'
-        }
-      };
-
-      var drawArgs = {
-        uniforms: {
-          model: regl.prop('model'),
-          tint: regl.prop('tint')
         }
       };
 
@@ -457,7 +456,6 @@
         drawLineArgs.frag = define3d + drawLineArgs.frag;
       }
 
-      var drawCommand = regl(drawArgs);
       var drawLineCommand = regl(drawLineArgs);
       var drawFillCommand = regl(drawFillArgs);
 
@@ -466,10 +464,8 @@
           this.syncResourceBuffers();
           state.sync.vertex = state.cursor.vertex;
         }
-        return drawCommand(params, function () {
-          drawFillCommand(params);
-          drawLineCommand(params);
-        })
+        drawFillCommand(params);
+        drawLineCommand(params);
       }.bind(this)
     },
 
