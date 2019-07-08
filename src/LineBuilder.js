@@ -40,6 +40,7 @@ export function LineBuilder (regl, opts_) {
   opts.dimensions = clamp(opts.dimensions || 2, 2, 3)
   opts.bufferSize = opts.bufferSize || 1024
 
+  this.ctorOptions = opts
   this.context = this.createContext(regl)
   this.state = this.createState(opts)
   this.resources = this.createResources()
@@ -101,52 +102,23 @@ inherit(null, LineBuilder, {
     var cursor = this.state.cursor
 
     var views = this.createResourceViews(cursor.max, cursor.dimensions)
+    var linesViews = views.lines.views
+    var fillsViews = views.fills.views
 
-    var positionBuffer = regl.buffer({
+    var linesBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
-      data: views.position
+      data: views.lines.dataView
     })
-    var offsetBuffer = regl.buffer({
+    var fillsBuffer = regl.buffer({
       usage: 'dynamic',
       type: 'float',
-      data: views.offset
-    })
-    var colorBuffer = regl.buffer({
-      usage: 'dynamic',
-      type: 'float',
-      data: views.color
-    })
-    var udBuffer = regl.buffer({
-      usage: 'dynamic',
-      type: 'float',
-      data: views.ud
-    })
-    var idBuffer = regl.buffer({
-      usage: 'dynamic',
-      type: 'float',
-      data: views.id
+      data: views.fills.dataView
     })
     var elementsBuffer = regl.elements({
       usage: 'dynamic',
       primitive: 'triangles',
       data: views.elements
-    })
-
-    var fillPositionBuffer = regl.buffer({
-      usage: 'dynamic',
-      type: 'float',
-      data: views.fillPosition
-    })
-    var fillColorBuffer = regl.buffer({
-      usage: 'dynamic',
-      type: 'float',
-      data: views.fillColor
-    })
-    var fillIdBuffer = regl.buffer({
-      usage: 'dynamic',
-      type: 'float',
-      data: views.fillId
     })
     var fillElementsBuffer = regl.elements({
       usage: 'dynamic',
@@ -155,63 +127,106 @@ inherit(null, LineBuilder, {
     })
 
     return {
-      position: {
-        view: views.position,
-        buffer: positionBuffer
+      lines: {
+        view: views.lines.dataView,
+        locs: views.lines.locs,
+        buffer: linesBuffer
       },
-      offset: {
-        view: views.offset,
-        buffer: offsetBuffer
-      },
-      color: {
-        view: views.color,
-        buffer: colorBuffer
-      },
-      ud: {
-        view: views.ud,
-        buffer: udBuffer
-      },
-      id: {
-        view: views.id,
-        buffer: idBuffer
+      fills: {
+        view: views.fills.dataView,
+        locs: views.fills.locs,
+        buffer: fillsBuffer
       },
       elements: {
         view: views.elements,
         buffer: elementsBuffer
       },
-      fillPosition: {
-        view: views.fillPosition,
-        buffer: fillPositionBuffer
-      },
-      fillColor: {
-        view: views.fillColor,
-        buffer: fillColorBuffer
-      },
-      fillId: {
-        view: views.fillId,
-        buffer: fillIdBuffer
-      },
       fillElements: {
         view: views.fillElements,
         buffer: fillElementsBuffer
+      },
+      position: {
+        view: linesViews.position
+      },
+      offset: {
+        view: linesViews.offset
+      },
+      color: {
+        view: linesViews.color
+      },
+      ud: {
+        view: linesViews.ud
+      },
+      id: {
+        view: linesViews.id
+      },
+      fillPosition: {
+        view: fillsViews.fillPosition
+      },
+      fillColor: {
+        view: fillsViews.fillColor
+      },
+      fillId: {
+        view: fillsViews.fillId
       }
     }
   },
 
   // TODO: Cleanup line / fill naming
+  // OPTIM: Interleave data / attributes
   createResourceViews: function (size, dimensions) {
     var ElementsArrayCtor = this.getElementsCtor(size)
+    var lines = this.createLinesResourceViews(size, dimensions)
+    var fills = this.createFillsResourceViews(size, dimensions)
     return {
-      position: new Float32Array(size * 2 * dimensions),
-      offset: new Float32Array(size * 2),
-      color: new Float32Array(size * 2 * 4),
-      ud: new Float32Array(size * 2 * 2),
-      id: new Float32Array(size * 2 * 1),
+      lines: lines,
+      fills: fills,
       elements: new ElementsArrayCtor(size * 4),
-      fillPosition: new Float32Array(size * dimensions),
-      fillColor: new Float32Array(size * 4),
-      fillId: new Float32Array(size * 1),
       fillElements: new ElementsArrayCtor(size * 3) // fill elements size?
+    }
+  },
+
+  createLinesResourceViews: function (size, dimensions) {
+    return this.createResourceViewsForSizes([
+      ['position', size * 2 * dimensions],
+      ['offset', size * 2 * 1],
+      ['color', size * 2 * 4],
+      ['ud', size * 2 * 2],
+      ['id', size * 2 * 1]
+    ])
+  },
+
+  createFillsResourceViews: function (size, dimensions) {
+    return this.createResourceViewsForSizes([
+      ['fillPosition', size * dimensions],
+      ['fillColor', size * 4],
+      ['fillId', size * 1]
+    ])
+  },
+
+  createResourceViewsForSizes: function (sizes) {
+    var locs = sizes.reduce((state, [name, size]) => {
+      state.data[name] = {
+        offset: state.offset,
+        size: size
+      }
+      state.offset += size
+      return state
+    }, { offset: 0, data: {} })
+
+    var data = new ArrayBuffer(locs.offset * FLOAT_BYTES)
+    var dataView = new Float32Array(data)
+    var views = sizes.reduce((state, [name, size]) => {
+      state.data[name] = new Float32Array(data, state.offset * FLOAT_BYTES, size)
+      state.offset += size
+      return state
+    }, { offset: 0, data: {} })
+
+    return {
+      data: data,
+      dataView: dataView,
+      locs: locs.data,
+      views: views.data
     }
   },
 
@@ -230,57 +245,73 @@ inherit(null, LineBuilder, {
   createAttributes: function () {
     var resources = this.resources
     var dimensions = this.state.cursor.dimensions
-
-    var position = resources.position
-    var color = resources.color
-    var ud = resources.ud
-    var id = resources.id
-    var offset = resources.offset
-
-    var fillPosition = resources.fillPosition
-    var fillColor = resources.fillColor
-    var fillId = resources.fillId
+    var lines = resources.lines
+    var fills = resources.fills
 
     return {
       line: {
         prevPosition: {
-          buffer: position.buffer,
+          buffer: lines.buffer,
           offset: 0,
           stride: FLOAT_BYTES * dimensions
         },
         currPosition: {
-          buffer: position.buffer,
+          buffer: lines.buffer,
           offset: FLOAT_BYTES * dimensions * 2,
           stride: FLOAT_BYTES * dimensions
         },
         nextPosition: {
-          buffer: position.buffer,
+          buffer: lines.buffer,
           offset: FLOAT_BYTES * dimensions * 4,
           stride: FLOAT_BYTES * dimensions
         },
         prevId: {
-          buffer: id.buffer,
-          offset: 0,
+          buffer: lines.buffer,
+          offset: FLOAT_BYTES * (lines.locs.id.offset + 0),
           stride: FLOAT_BYTES
         },
         currId: {
-          buffer: id.buffer,
-          offset: FLOAT_BYTES * 2,
+          buffer: lines.buffer,
+          offset: FLOAT_BYTES * (lines.locs.id.offset + 2),
           stride: FLOAT_BYTES
         },
         nextId: {
-          buffer: id.buffer,
-          offset: FLOAT_BYTES * 4,
+          buffer: lines.buffer,
+          offset: FLOAT_BYTES * (lines.locs.id.offset + 4),
           stride: FLOAT_BYTES
         },
-        offset: offset.buffer,
-        ud: ud.buffer,
-        color: color.buffer
+        offset: {
+          buffer: lines.buffer,
+          offset: FLOAT_BYTES * lines.locs.offset.offset,
+          stride: FLOAT_BYTES
+        },
+        ud: {
+          buffer: lines.buffer,
+          offset: FLOAT_BYTES * lines.locs.ud.offset,
+          stride: FLOAT_BYTES * 2
+        },
+        color: {
+          buffer: lines.buffer,
+          offset: FLOAT_BYTES * lines.locs.color.offset,
+          stride: FLOAT_BYTES * 4
+        }
       },
       fill: {
-        position: fillPosition.buffer,
-        color: fillColor.buffer,
-        id: fillId.buffer
+        position: {
+          buffer: fills.buffer,
+          offset: FLOAT_BYTES * fills.locs.fillPosition.offset,
+          stride: FLOAT_BYTES * dimensions
+        },
+        color: {
+          buffer: fills.buffer,
+          offset: FLOAT_BYTES * fills.locs.fillColor.offset,
+          stride: FLOAT_BYTES * 4
+        },
+        id: {
+          buffer: fills.buffer,
+          offset: FLOAT_BYTES * fills.locs.fillId.offset,
+          stride: FLOAT_BYTES * 1
+        }
       }
     }
   },
@@ -393,32 +424,17 @@ inherit(null, LineBuilder, {
     }.bind(this)
   },
 
+  // OPTIM: Maybe use cursor position to subdata at byte offset
   syncResourceBuffers: function () {
     var resources = this.resources
-
-    var position = resources.position
-    var offset = resources.offset
-    var color = resources.color
-    var ud = resources.ud
-    var id = resources.id
+    var lines = resources.lines
     var elements = resources.elements
-
-    var fillPosition = resources.fillPosition
-    var fillColor = resources.fillColor
-    var fillId = resources.fillId
+    var fills = resources.fills
     var fillElements = resources.fillElements
 
-    // TODO: Use cursor position to subdata at byte offset
-    position.buffer.subdata(position.view)
-    offset.buffer.subdata(offset.view)
-    color.buffer.subdata(color.view)
-    ud.buffer.subdata(ud.view)
-    id.buffer.subdata(id.view)
+    lines.buffer.subdata(lines.view)
     elements.buffer.subdata(elements.view)
-
-    fillPosition.buffer.subdata(fillPosition.view)
-    fillColor.buffer.subdata(fillColor.view)
-    fillId.buffer.subdata(fillId.view)
+    fills.buffer.subdata(fills.view)
     fillElements.buffer.subdata(fillElements.view)
   },
 
@@ -445,16 +461,33 @@ inherit(null, LineBuilder, {
   },
 
   resize: function (size) {
+    var opts = this.ctorOptions
     var cursor = this.state.cursor
     var resources = this.resources
     var nextViews = this.createResourceViews(size, cursor.dimensions)
 
     cursor.max = size
     Object.keys(nextViews).forEach(function (key) {
-      resources[key].view = nextViews[key]
-      resources[key].buffer({
-        data: nextViews[key] })
+      var resource = resources[key]
+      var item = nextViews[key]
+
+      if (resource.locs) {
+        resource.view = item.dataView
+        resource.locs = item.locs
+        Object.keys(item.views).forEach(function (subViewName) {
+          resources[subViewName].view = item.views[subViewName]
+        })
+      } else {
+        resource.view = item
+      }
+
+      if (resource.buffer) {
+        resource.buffer({ data: resource.view })
+      }
     })
+
+    this.attributes = this.createAttributes()
+    this.draw = this.createDrawCommand(opts)
   },
 
   reset: function () {
@@ -490,11 +523,12 @@ inherit(null, LineBuilder, {
 
   destroy: function () {
     var resources = this.resources
-    resources.position.buffer.destroy()
-    resources.offset.buffer.destroy()
-    resources.color.buffer.destroy()
-    resources.ud.buffer.destroy()
-    resources.elements.buffer.destroy()
+    Object.keys(resources).forEach(function (key) {
+      var resource = resources[key]
+      if (resource.buffer) {
+        resource.buffer.destroy()
+      }
+    })
   },
 
   // State Stack
