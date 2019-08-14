@@ -79,7 +79,7 @@
 
   var frag$1 = "precision highp float;\n#define GLSLIFY 1\nuniform vec4 tint;\nvarying vec4 vColor;\n\nvoid main() {\n  gl_FragColor = vColor * tint;\n}\n";
 
-  var vert$1 = "precision highp float;\n#define GLSLIFY 1\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\n\n// #ifdef DIMENSIONS_3\n// attribute vec3 position;\n// #else\nattribute vec2 position;\n// #endif\n\nattribute vec4 color;\nattribute float id;\n\nvarying vec4 vColor;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n  vec4 posProjected = projViewModel * vec4(position, 0.0, 1.0);\n\n  vColor = color;\n\n  gl_Position = posProjected * vec4(0.5, 0.5, 0.0, 1.0);\n}\n";
+  var vert$1 = "precision highp float;\n#define GLSLIFY 1\n\nuniform mat4 projection;\nuniform mat4 model;\nuniform mat4 view;\n\n#ifdef DIMENSIONS_3\n\tattribute vec3 position;\n#else\n\tattribute vec2 position;\n#endif\n\nattribute vec4 color;\nattribute float id;\n\nvarying vec4 vColor;\n\nvoid main() {\n  mat4 projViewModel = projection * view * model;\n\n#ifdef DIMENSIONS_3\n  vec4 posProjected = projViewModel * vec4(position, 1.0);\n#else\n  vec4 posProjected = projViewModel * vec4(position, 0.0, 1.0);\n#endif\n\n  vColor = color;\n\n  gl_Position = posProjected * vec4(0.5, 0.5, 0.0, 1.0);\n}\n";
 
   var fill = {
     frag: frag$1,
@@ -473,7 +473,7 @@
           return state.cursor.fillTri * 3
         },
         depth: depth,
-        cull: cull,
+        cull: { enable: false },
         blend: blend
       };
       var drawFillArgs = opts.drawFillArgs
@@ -484,6 +484,8 @@
         var define3d = '#define DIMENSIONS_3\n';
         drawLineArgs.vert = define3d + drawLineArgs.vert;
         drawLineArgs.frag = define3d + drawLineArgs.frag;
+        drawFillArgs.vert = define3d + drawFillArgs.vert;
+        drawFillArgs.frag = define3d + drawFillArgs.frag;
       }
 
       var drawLineCommand = regl(drawLineArgs);
@@ -730,7 +732,7 @@
       colorView[bib] = colorView[bib + 4] = color[2];
       colorView[bia] = colorView[bia + 4] = color[3];
 
-      glMatrix.vec2.copy(prevPosition, pos);
+      glMatrix.vec3.copy(prevPosition, pos);
       activePath.addPoint(pos);
 
       cursor.vertex += 2;
@@ -759,7 +761,7 @@
       var elementsView = resources.elements.view;
 
       var pos = this.transformInput(x, y, z);
-      var segmentLength = glMatrix.vec2.distance(prevPosition, pos);
+      var segmentLength = glMatrix.vec3.distance(prevPosition, pos);
       var totalLength = activePath.totalLength += segmentLength;
 
       var aix = cursor.vertex * dimensions * 2;
@@ -805,7 +807,7 @@
       elementsView[evi + 4] = bio;
       elementsView[evi + 5] = dio;
 
-      glMatrix.vec2.copy(prevPosition, pos);
+      glMatrix.vec3.copy(prevPosition, pos);
       activePath.addPoint(pos);
 
       cursor.quad += 1;
@@ -824,8 +826,8 @@
         var ax = x + Math.cos(angle) * radius;
         var ay = y + Math.sin(angle) * radius;
 
-        if (i === 0) this.moveTo(ax, ay);
-        else this.lineTo(ax, ay);
+        if (i === 0) this.moveTo(ax, ay, 0);
+        else this.lineTo(ax, ay, 0);
       }
     },
 
@@ -931,7 +933,9 @@
 
     fill: function () {
       var state = this.state;
+      var is3d = state.is3d;
       var cursor = state.cursor;
+      var dimensions = cursor.dimensions;
       var activePath = state.activePath;
       var id = state.pathCount;
       var color = state.style.fillColor;
@@ -947,17 +951,23 @@
       var flatPoints = new Float32Array(pointCount * 2);
 
       var fvi = cursor.fillVertex;
-      var fvi2 = fvi * 2;
+      var fvi2 = fvi * dimensions;
       var fvi4 = fvi * 4;
       var fti = cursor.fillTri * 3;
 
       for (var i = 0; i < pointCount; i++) {
         var point = points[i];
 
-        var ix = i * 2;
+        var ix = i * dimensions;
         var iy = ix + 1;
-        fillPositionView[fvi2 + ix] = flatPoints[ix] = point[0];
-        fillPositionView[fvi2 + iy] = flatPoints[iy] = point[1];
+        var ixf = i * 2;
+        var iyf = ixf + 1;
+        fillPositionView[fvi2 + ix] = flatPoints[ixf] = point[0];
+        fillPositionView[fvi2 + iy] = flatPoints[iyf] = point[1];
+        if (is3d) {
+          var iz = ix + 2;
+          fillPositionView[fvi2 + iz] = point[2];
+        }
 
         var ii = i;
         fillIdView[fvi + ii] = id;

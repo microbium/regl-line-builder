@@ -874,6 +874,7 @@ inherit(null, LineBuilder, {
 
   // Fill
 
+  // OPTIM: Reuse flat array buffer
   fill: function () {
     var state = this.state
     var is3d = state.is3d
