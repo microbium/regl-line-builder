@@ -1,6 +1,6 @@
 {
   "name": "regl-line-builder",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Draw pretty lines in WebGL with the Canvas2D API.",
   "main": "dist/regl-line-builder.js",
   "module": "dist/regl-line-builder.module.js",
