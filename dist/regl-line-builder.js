@@ -496,8 +496,12 @@
           this.syncResourceBuffers();
           state.sync.vertex = state.cursor.vertex;
         }
-        drawFillCommand(params);
-        drawLineCommand(params);
+        if (state.cursor.quad > 0) {
+          drawLineCommand(params);
+        }
+        if (state.cursor.fillTri > 0) {
+          drawFillCommand(params);
+        }
       }.bind(this)
     },
 
