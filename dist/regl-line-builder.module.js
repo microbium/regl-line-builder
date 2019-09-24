@@ -491,11 +491,11 @@ inherit(null, LineBuilder, {
         this.syncResourceBuffers();
         state.sync.vertex = state.cursor.vertex;
       }
-      if (state.cursor.quad > 0) {
-        drawLineCommand(params);
-      }
       if (state.cursor.fillTri > 0) {
         drawFillCommand(params);
+      }
+      if (state.cursor.quad > 0) {
+        drawLineCommand(params);
       }
     }.bind(this)
   },
